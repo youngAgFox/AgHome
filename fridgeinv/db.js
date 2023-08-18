@@ -1,4 +1,4 @@
-const wsUri = "ws://" + window.location.host + "/Serve";
+const wsUri = "ws://" + window.location.host + "/Server";
 export class DatabaseManager {
     constructor() {
         this.socket = null;
