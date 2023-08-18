@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Kill caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <link rel="stylesheet" href="/base.css" />
+    <link rel="shortcut icon" href="/images/fridgeinv-icon.png" />
+    <script src="/fridgeinv/inv.js" type="module" defer></script>
+
+    <title>FridgeInv</title>
+</head>
+
+<body>
+    <header style="display: flex; flex-direction: column; grid-column: auto / span 4;">
+        <h1>FridgeInv</h1>
+        <div class="connection">
+            <label id="connection-status-label">Connecting</label>
+            <div style="position: relative;">
+                <img id="connecting-img" src="/images/duck-loading.gif" class="abs-zero" width="100px" height="100px">
+                <img id="connected-img" src="/images/checkmark.png" class="hidden abs-zero">
+                <img id="connection-error-img" src="/images/error.png" class="hidden abs-zero">
+            </div>
+        </div>
+    </header>
+    <!-- js inserts into the inventory container element before the inv-add button -->
+    <section id="inventory" style="grid-column: auto / span 2;">
+        <h2 style="text-align: center; grid-column: auto / span 2;">Fridge</h2>
+        <!-- elements inserted here -->
+        <button id="inv-add" class="" style="font-size: 1.5rem;">+</button>
+        <form id="inv-add-form" class="hidden">
+            <p>
+                Add a new inventory item to the virtual fridge. Leaving the date blank fills in todays date.
+            </p>
+            <fieldset>
+                <legend style="column-span: 2;">Inventory Item Attributes</legend>
+                <label for="inv-item-name">Name</label>
+                <input type="text" name="name" id="inv-item-name" maxlength="50" autofocus required>
+                <label for="inv-item-quantity">Quantity</label>
+                <input type="number" name="quantity" id="inv-item-quantity" value="1" min="0" max="99" required>
+                <label for="inv-item-last-added">Last Added Date</label>
+                <input type="date" name="last added date" id="inv-item-last-added">
+            </fieldset>
+            <input type="submit" id="inv-add-form-submit-btn" value="Add">
+            <input type="button" id="inv-add-form-cancel-btn" value="Cancel">
+        </form>
+    </section>
+    <section id="store" style="grid-column: auto / span 2;">
+        <h2 style="text-align: center; grid-column: auto / span 2;">Store</h2>
+    </section>
+</body>
+
+</html>
