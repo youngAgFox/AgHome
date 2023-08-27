@@ -1,58 +1,67 @@
-const wsUri = "ws://" + window.location.host + "/Server";
-export class DatabaseManager {
-    constructor() {
-        this.socket = null;
+const _wsUri = "ws://" + window.location.host + "/Server";
+let _socket = null;
+let _isConnected = false;
+
+export function connect() {
+    if (null != _socket) {
+        throw Error("Socket already initialized");
     }
+    _socket = new WebSocket(_wsUri);
+    _socket.addEventListener("open", onOpen);
+    _socket.addEventListener("close", onClose);
+    _socket.addEventListener("message", onMessage);
+    _socket.addEventListener("error", onError);
+    console.log("Initialized db socket");
 
-    connect() {
-        if (null != this.socket) {
-            throw Error("Socket already initialized");
-        }
-        this.socket = new WebSocket(wsUri);
-        this.socket.addEventListener("open", this.onOpen);
-        this.socket.addEventListener("close", this.onClose);
-        this.socket.addEventListener("message", this.onMessage);
-        this.socket.addEventListener("error", this.onError);
-        console.log("Initialized db socket");
-
-        const socket = this.socket;
-        return new Promise(function connectPromise(resolve, reject) {
-            socket.addEventListener("open", function resolveOnOpen() {
-                resolve();
-            });
-            socket.addEventListener("close", function resolveOnClose(err) {
-                reject(err);
-            });
+    return new Promise(function connectPromise(resolve, reject) {
+        _socket.addEventListener("open", function resolveOnOpen() {
+            resolve();
         });
-    }
+        _socket.addEventListener("close", function resolveOnClose(err) {
+            reject(err);
+        });
+    });
+}
 
-    close() {
-        if (null == this.socket) {
-            throw Error("Cannot close an unopened Socket");
-        }
-        this.socket.close();
-        this.socket = null;
+export function close() {
+    if (null == _socket) {
+        throw Error("Cannot close an unopened Socket");
     }
+    _socket.close();
+    _socket = null;
+}
 
-    sendDataRequest() {
-        this.socket.send("dataRequest");
-    }
+export function sendDataRequest() {
+    _socket.send("dataRequest");
+}
 
-    onOpen(event) {
-        console.log("Opened connection: " + JSON.stringify(event));
-    }
+function onOpen(event) {
+    console.log("Opened connection: " + JSON.stringify(event));
+    _isConnected = true;
+}
 
-    onClose(event) {
-        console.log("Closed connection: " + JSON.stringify(event));
-    }
+function onClose(event) {
+    console.log("Closed connection: " + JSON.stringify(event));
+    _isConnected = false;
+}
 
-    onMessage(event) {
-        console.log("Received message: " + event.data);
-    }
+function onMessage(event) {
+    console.log("Received message: " + event.data);
+}
 
-    onError(event) {
-        console.log(
-            "Encountered error on connection: " + JSON.stringify(event)
-        );
+function onError(event) {
+    console.log("Encountered error on connection: " + JSON.stringify(event));
+}
+
+export function isConnected() {
+    return _isConnected;
+}
+
+export function deleteItem(invItem) {}
+
+export function addEventListener(eventType, func) {
+    if (null === _socket) {
+        throw Error("Cannot add event listeners before initializing database");
     }
+    _socket.addEventListener(eventType, func);
 }

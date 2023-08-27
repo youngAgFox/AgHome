@@ -1,0 +1,4 @@
+#applications {
+    display: grid;
+    grid-template-columns: repeat(autofit, minmax(250px, 1fr));
+}
