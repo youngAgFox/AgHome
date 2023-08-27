@@ -35,6 +35,10 @@ export function sendDataRequest() {
     _socket.send("dataRequest");
 }
 
+export function requestCreateStore(storeName) {
+    _socket.send(`createStore:"${storeName}"`);
+}
+
 function onOpen(event) {
     console.log("Opened connection: " + JSON.stringify(event));
     _isConnected = true;

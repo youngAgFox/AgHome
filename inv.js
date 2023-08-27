@@ -1,30 +1,14 @@
+import { InventoryItem } from "./Objects.js";
 import * as Database from "/db.js";
 // TODO add different menus / groups
 
-const INV_ELEMENTS = [];
 const QUANTITY_MIN = 0;
 const QUANTITY_INIT = 1;
 const QUANTITY_MAX = 99;
 const NAME_MAXLENGTH = 50;
+let checkedOutStore = null;
 let checkbox_id_seq = 1;
 
-class InventoryItem {
-    constructor(
-        name,
-        quantity = 0,
-        preferredAmount = 1,
-        lowThreshold = 3,
-        date = Date()
-    ) {
-        this.quantity = quantity;
-        this.name = name;
-        this.isSuspended = false;
-        this.inventoryGroup = "ingredient";
-        this.preferredAmount = preferredAmount;
-        this.lowThreshold = lowThreshold;
-        this.lastAdded = new Date(date);
-    }
-}
 
 const connectionStatusLabel = document.getElementById(
     "connection-status-label"
@@ -39,13 +23,15 @@ async function initializeFromDatabase() {
     try {
         await Database.connect();
         Database.addEventListener("close", databaseClosed);
+        Database.addEventListener("store-add", addStoreItem);
+        Database.addEventListener("inventory-add", addInventoryItem);
+        // this should send two messages - one to pop fridge, one to pop store and stores
         Database.sendDataRequest();
         console.log("Initialized screen");
         connectingImage.classList.toggle("hidden", true);
         connectedImage.classList.toggle("hidden", false);
         connectionStatusLabel.classList.toggle("closed", false);
         connectionStatusLabel.innerText = "Connected";
-        // Database.close();
     } catch (error) {
         console.log("Failed to populate database: " + JSON.stringify(error));
         connectingImage.classList.toggle("hidden", true);
@@ -74,6 +60,8 @@ const toggleFridgeBtn = document.getElementById("toggle-fridge-btn");
 const toggleStoreBtn = document.getElementById("toggle-store-btn");
 const body = document.getElementsByTagName("body")[0];
 const store = document.getElementById("store");
+const storeAddBtn = document.getElementById("store-add-btn");
+const storeSelect = document.getElementById("store-select");
 
 inventoryAddBtn.addEventListener("click", toggleAddInventoryItem);
 inventoryAddForm.addEventListener("submit", readNewInventoryItem);
@@ -103,27 +91,8 @@ function toggleFridgeStoreButton(toggleTarget, other) {
 
 // TODO Remove this out once testing is complete
 addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
-addInventoryItem(new InventoryItem("Test"));
 
-function handleAddInvSubmit(e) {
-    e.preventDefault();
+function handleAddInvSubmit() {
     if (!inventoryAddForm.reportValidity()) {
         return;
     }
@@ -176,7 +145,6 @@ function addInventoryItem(invItem) {
     const item = document.createElement("div");
     item.classList.add("inventory-item");
     item.style = "flex-wrap: wrap;";
-    INV_ELEMENTS.push(item);
 
     const itemName = document.createElement("label");
     itemName.innerText = invItem.name;
@@ -194,15 +162,42 @@ function addInventoryItem(invItem) {
     addSuspendCheckbox(invItem, item, secondary);
 
     const deleteButton = document.createElement("button");
-    // deleteButton.style = "background-color: white; opacity: 60%;";
-    deleteButton.classList.add("inventory-item-delete-button");
-    console.log("Adding delete handler with elem: " + JSON.stringify(item));
+    deleteButton.classList.add("inventory-item-delete-button", "icon-button");
     deleteButton.addEventListener("click", () => deleteInvItem(item, invItem));
     secondary.appendChild(deleteButton);
+
+    const addToStoreButton = document.createElement("button");
+    addToStoreButton.classList.add("inventory-item-to-store-button", "icon-button");
+    addToStoreButton.addEventListener("click", () => toggleItemToStore(invItem, addToStoreButton));
+    secondary.appendChild(addToStoreButton);
 
     item.appendChild(secondary);
 
     inventory.insertBefore(item, inventoryAddBtn);
+}
+
+function toggleItemToStore(invItem, addToStoreButton) {
+    if (null === checkedOutStore) {
+        alert("There is no checked out store list. Please check one out first.");
+        return;
+    }
+    const isRemoving = addToStoreButton.classList.contains("toggled");
+    addToStoreButton.classList.toggle("toggled");
+    if (isRemoving) {
+        
+    } else {
+        addStoreItem(invItem);
+    }
+}
+
+function addStoreItem(invItem) {
+    const item = document.createElement("div");
+    item.innerText = invItem.name;
+    store.appendChild(item);
+}
+
+function deleteStoreItem(storeItemDiv, invItem) {
+
 }
 
 function deleteInvItem(invItemDiv, invItem) {
@@ -212,8 +207,6 @@ function deleteInvItem(invItemDiv, invItem) {
     }
     console.log("InvItem: " + JSON.stringify(invItem));
     invItemDiv.remove();
-    const index = INV_ELEMENTS.findIndex((elem) => elem == invItemDiv);
-    INV_ELEMENTS.splice(index, 1);
     Database.deleteItem(invItem);
 }
 
@@ -292,5 +285,5 @@ function formatDate(date) {
         return "?";
     }
 
-    return `${date.getMonth()}/${date.getDate()}/${date.getFullYear()}`;
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 }

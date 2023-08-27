@@ -11,14 +11,18 @@ body {
     /* max-width: 100%; */
     /* max-height: 100%; */
     transition: background-color 0.5s linear;
+    overflow-y: auto;
 }
 
 section {
     padding: 0.5rem 1rem;
 }
 
-#store {
+.dual #store {
     background-color: var(--clr-a2);
+}
+
+#store {
     color: white;
 }
 
@@ -48,6 +52,18 @@ body.store-style {
     height: 100%;
 }
 
+#inventory-store-container.dual {
+    overflow: hidden;
+}
+
+#inventory:not(.hidden), 
+#store:not(.hidden) {
+    padding-top: 0;
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
 #inventory, #store {
     flex-grow: 1;
     display: flex;
@@ -58,9 +74,9 @@ body.store-style {
     min-height: 300px;
     align-items: center;
     border-radius: 15px;
-    position: relative;
-    top: 0;
-    left: 0;
+}
+
+.dual #inventory, .dual #store {
     overflow-y: scroll;
 }
 
@@ -73,11 +89,23 @@ body.store-style {
     justify-self: center;
 }
 
+#inv-add:not(.hidden) {
+    position: sticky; 
+    bottom: 0; 
+    left: 0;
+}
+
 #inv-add-form {
     background-color: var(--clr-5);
     border: 2px solid slategrey;
     padding: 1rem 0.5rem;
     align-self: stretch;
+}
+
+#inv-add-form:not(.hidden) {
+    position: sticky; 
+    bottom: 0;
+    left: 0;
 }
 
 #inv-add-form fieldset {
@@ -111,20 +139,94 @@ body.store-style {
     border-radius: 5px;
 }
 
-.inventory-item-delete-button {
-    background-image: url("/images/trash-icon.png"); 
+.icon-button::after,
+.icon-button::before {
+    pointer-events: none;
+    content: "";
+    position: absolute;
+    top: 3px;
+    width: 100px;
+    opacity: 0;
+    background-color: whitesmoke;
+    border-radius: 10px 0 0 10px;
+    transition: opacity linear 0.15s;
+    transition-delay: 0;
+}
+
+.icon-button::before {
+    right: 100%;
+}
+
+.icon-button::after {
+    left: 100%;
+}
+
+.icon-button:hover::after,
+.icon-button:hover::before {
+    opacity: 95%;
+    transition-delay: 1s;
+}
+
+.icon-button {
+    position: relative;
     border-style: none; 
-    background-color: #ecfdf57f; 
     width: 22px; 
     height: min(25px, 100%); 
     background-position: center; 
+    background-size: contain;
     background-repeat: no-repeat;
+    background-color: transparent;
     padding: 5px;
+    filter: brightness(70%);
     border-radius: 5px;
+    text-align: center;
 }
 
-.inventory-item-delete-button:hover {
-    background-color: var(--clr-10);
+.icon-button:hover {
+    filter: brightness(100%) invert(10%);
+}
+
+.inventory-item-delete-button {
+    background-image: url("/images/trash-icon.png"); 
+}
+
+.inventory-item-to-store-button {
+    background-image: url("/images/arrow.png");
+    filter: invert(20%);
+}
+
+.inventory-item-to-store-button.toggled {
+    transform: rotateY(180deg);
+    filter: invert(80%);
+}
+
+.inventory-item-to-store-button.toggled:hover {
+    filter: invert(100%);
+}
+
+.inventory-item-to-store-button:hover {
+    filter: invert(0);
+}
+
+.inventory-item-to-store-button.toggled::before {
+    content: "";
+}
+
+.inventory-item-to-store-button.toggled::after {
+    content: "Remove from store";
+    width: 120px;
+    /* Counter transform */
+    transform: rotateY(180deg);
+    /* Counter filter */
+    filter: invert(100%);
+}
+
+.inventory-item-to-store-button::before {
+    content: "Add to Store";
+}
+
+.inventory-item-delete-button.icon-button::before {
+    content: "Delete item";
 }
 
 .inventory-item-sublabel {
@@ -179,7 +281,7 @@ body.store-style {
     background-color: var(--clr-3);
 }
 
-#fridge-store-button button:hover {
+#fridge-store-button button:hover:not(.toggled) {
     opacity: 95%;
     outline-color: white;
 }
@@ -191,8 +293,22 @@ body.store-style {
     left: 100%;
 }
 
+#fridge-header {
+    background-color: var(--clr-6);
+}
+
+#store-header {
+    background-color: var(--clr-a2);
+}
+
 #fridge-header:not(.hidden), #store-header:not(.hidden) {
-    position: sitcky;
+    border-bottom: 2px inset grey;
+    padding: 0.5rem;
+    width: 100%;
+    background-color: none;
+    position: sticky;
+    top: 0;
+    left: 0;
 }
 
 header .connection {
