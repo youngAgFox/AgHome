@@ -89,10 +89,20 @@ body.store-style {
     justify-self: center;
 }
 
+#inv-add:disabled {
+    background-color: grey;
+    opacity: 70%;
+}
+
 #inv-add:not(.hidden) {
     position: sticky; 
     bottom: 0; 
     left: 0;
+}
+
+#inv-add:hover:not(:disabled) {
+    background-color: var(--clr-5);
+    color: var(--clr-1);
 }
 
 #inv-add-form {
@@ -123,11 +133,6 @@ body.store-style {
     max-width: 8rem;
 }
 
-#inv-add:hover {
-    background-color: var(--clr-5);
-    color: var(--clr-1);
-}
-
 .inventory-item {
     display: flex;
     flex-wrap: nowrap;
@@ -137,34 +142,6 @@ body.store-style {
     background-color: var(--clr-3);
     padding: 0.5rem 1rem;
     border-radius: 5px;
-}
-
-.icon-button::after,
-.icon-button::before {
-    pointer-events: none;
-    content: "";
-    position: absolute;
-    top: 3px;
-    width: 100px;
-    opacity: 0;
-    background-color: whitesmoke;
-    border-radius: 10px 0 0 10px;
-    transition: opacity linear 0.15s;
-    transition-delay: 0;
-}
-
-.icon-button::before {
-    right: 100%;
-}
-
-.icon-button::after {
-    left: 100%;
-}
-
-.icon-button:hover::after,
-.icon-button:hover::before {
-    opacity: 95%;
-    transition-delay: 1s;
 }
 
 .icon-button {
@@ -206,27 +183,6 @@ body.store-style {
 
 .inventory-item-to-store-button:hover {
     filter: invert(0);
-}
-
-.inventory-item-to-store-button.toggled::before {
-    content: "";
-}
-
-.inventory-item-to-store-button.toggled::after {
-    content: "Remove from store";
-    width: 120px;
-    /* Counter transform */
-    transform: rotateY(180deg);
-    /* Counter filter */
-    filter: invert(100%);
-}
-
-.inventory-item-to-store-button::before {
-    content: "Add to Store";
-}
-
-.inventory-item-delete-button.icon-button::before {
-    content: "Delete item";
 }
 
 .inventory-item-sublabel {

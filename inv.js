@@ -2,6 +2,7 @@ import { InventoryItem } from "./Objects.js";
 import * as Database from "/db.js";
 // TODO add different menus / groups
 
+const STORE_ITEMS = [];
 const QUANTITY_MIN = 0;
 const QUANTITY_INIT = 1;
 const QUANTITY_MAX = 99;
@@ -162,11 +163,13 @@ function addInventoryItem(invItem) {
     addSuspendCheckbox(invItem, item, secondary);
 
     const deleteButton = document.createElement("button");
+    deleteButton.title = "Delete the item."
     deleteButton.classList.add("inventory-item-delete-button", "icon-button");
     deleteButton.addEventListener("click", () => deleteInvItem(item, invItem));
     secondary.appendChild(deleteButton);
 
     const addToStoreButton = document.createElement("button");
+    addToStoreButton.title = "Add the item to the store list.";
     addToStoreButton.classList.add("inventory-item-to-store-button", "icon-button");
     addToStoreButton.addEventListener("click", () => toggleItemToStore(invItem, addToStoreButton));
     secondary.appendChild(addToStoreButton);
@@ -183,6 +186,7 @@ function toggleItemToStore(invItem, addToStoreButton) {
     }
     const isRemoving = addToStoreButton.classList.contains("toggled");
     addToStoreButton.classList.toggle("toggled");
+    addToStoreButton.title = isRemoving ? "Add the item to the store list." : "Remove the item from the store list.";
     if (isRemoving) {
         
     } else {
