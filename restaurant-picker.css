@@ -1,0 +1,50 @@
+:root {
+    --clr-base: #91f9e5;
+    --clr-base-hl: #76f7bf;
+    --clr-alt: #5fdd9d;
+    --clr-alt-hl: #499167;
+    --clr-dark: #3f4531;
+}
+
+.base {
+    background-color: var(--clr-base);
+}
+
+.base-hl {
+    background-color: var(--clr-base-hl);
+}
+
+.alt {
+    background-color: var(--clr-alt);
+}
+
+.alt-hl {
+    background-color: var(--clr-alt-hl);
+}
+
+.dark {
+    background-color: var(--clr-dark);
+}
+
+.restuarant-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: max(500px, 40%);
+}
+
+.restuarant-display h2 {
+    background-color: var(--clr-alt);
+    border: 2px solid var(--clr-alt-hl);
+}
+
+.restuarant-display th {
+    background-color: grey;
+}
+
+.restuarant-display table {
+    border-spacing: 0;
+}
+
+table, th, td {
+    border: 1px solid black;
+}

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Picker</title>
+    <link rel="stylesheet" href="/base.css">
+    <link rel="stylesheet" href="/restaurant-picker.css">
+    <script type="module" src="/restaurant-picker.js" defer></script>
+</head>
+
+<body class="" style="padding: 0.5rem 1rem;">
+    <a href="/index.html" class="bare-link">
+        <h1>Restaurant Picker</h1>
+    </a>
+    <section class="flex-col-center" style="gap: 60px;">
+        <div>
+            <h2 id="select-text" style="text-align: center;">How do we feel about...</h2>
+            <form class="flex-col-center" style="gap: 10px;">
+                <div class="flex">
+                    <fieldset id="fieldset-type" class="grid" style="grid-template-columns: min-content 1fr; gap: 5px;">
+                        <legend>Type</legend>
+                        <input type="checkbox" name="americanType" id="type-american" checked>
+                        <label for="type-american">American</label>
+                        <input type="checkbox" name="" id="type-mexican" checked>
+                        <label for="type-mexican">Mexican</label>
+                        <input type="checkbox" name="" id="type-italian" checked>
+                        <label for="type-italian">Italian</label>
+                        <input type="checkbox" name="" id="type-indian" checked>
+                        <label for="type-indian">Indian</label>
+                        <input type="checkbox" name="" id="type-japanese" checked>
+                        <label for="type-japanese">Japanese (sushi)</label>
+                        <input type="checkbox" name="" id="type-vietnamese" checked>
+                        <label for="type-vietnamese">Vietnamese (noodles)</label>
+                        <input type="checkbox" name="" id="type-hawaiian" checked>
+                        <label for="type-hawaiian">Hawaiian (poke)</label>
+                        <div class="flex" style="gap: 10px; grid-column: 1 / span 2; justify-content: space-between;">
+                            <button id="select-all-type-btn" type="button">Select All</button>
+                            <button id="deselect-all-type-btn" type="button">Deselect All</button>
+                        </div>
+                    </fieldset>
+                    <fieldset class="grid"
+                        style="gap: 10px; grid-template-columns: repeat(4, max-content); align-items: baseline; grid-auto-rows: max-content;">
+                        <legend>Properties</legend>
+                        <label for="quality-select-min">Quality:</label>
+                        <select name="qualityMin" id="quality-select-min" style="height: 2rem;">
+                            <option value="1">fast</option>
+                            <option value="2" selected>low</option>
+                            <option value="3">medium</option>
+                            <option value="4">high</option>
+                            <option value="5">fine</option>
+                        </select>
+                        <label>to</label>
+                        <select name="qualityMax" id="quality-select-max" style="height: 2rem;">
+                            <option value="1">fast</option>
+                            <option value="2">low</option>
+                            <option value="3">medium</option>
+                            <option value="4" selected>high</option>
+                            <option value="5">fine</option>
+                        </select>
+                        <label for="health-select-min">Health:</label>
+                        <select name="healthMin" id="health-select-min" style="height: 2rem;">
+                            <option value="1" selected>unhealthy</option>
+                            <option value="2">bad</option>
+                            <option value="3">ok</option>
+                            <option value="4">good</option>
+                            <option value="5">healthy</option>
+                        </select>
+                        <label>to</label>
+                        <select name="healthMax" id="health-select-max" style="height: 2rem;">
+                            <option value="1">unhealthy</option>
+                            <option value="2">bad</option>
+                            <option value="3">ok</option>
+                            <option value="4">good</option>
+                            <option value="5" selected>healthy</option>
+                        </select>
+                    </fieldset>
+                </div>
+                <div class="flex" style="gap: 30px; justify-content: space-between; width: 60%;">
+                    <button type="reset">Reset</button>
+                    <button id="choose-btn" type="button">Get me something to eat!</button>
+                </div>
+            </form>
+        </div>
+        <div class="flex-col-center" style="width: 100%;">
+            <section class="restuarant-display">
+                <h2 id="chosen-restaurant-label" style="text-align: center; grid-column: 1 / span 2;">???</h3>
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" colspan="2">Properties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th scope="row" style="text-align: left;">Types</th>
+                                        <td id="types-label"></td>
+                                    </tr>
+                                    <tr>
+                                        <!-- The width here stops the table from allocating space in the first col -->
+                                        <th scope="row" style="text-align: left; width: 6rem;">Quality</th>
+                                        <td id="quality-label"></tr>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" style="text-align: left;">Healthiness</th>
+                                        <td id="health-label"></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" style="text-align: left;">Foods</th>
+                                        <td id="foods-label"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table>
+                                
+                            </table>
+            </section>
+        </div>
+    </section>
+</body>
+
+</html>

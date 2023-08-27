@@ -1,0 +1,157 @@
+[
+    {
+        "name": "Chili's",
+        "link": "https://chilis.com/",
+        "quality": 3,
+        "types": ["mexican", "american", "dessert"],
+        "food-types": ["chicken", "salad", "alcohol", "burger", "spicy"],
+        "health": 1,
+        "hours": [
+            {
+                "days": ["mon", "wed", "thurs"],
+                "hours": ["11:00", "14:30", "16:30", "21:30"]
+            },
+            {
+                "days": ["fri", "sat"],
+                "hours": ["11:00", "21:30"]
+            },
+            {
+                "days": ["sun"],
+                "hours": ["11:00", "21:00"]
+            }
+        ]
+    },
+    {
+        "name": "Paul's Pelmini",
+        "quality": 3,
+        "health" : 3,
+        "food-types": ["pelmini", "spicy"],
+        "types": ["russian"]
+    },
+    {
+        "name": "Fuji",
+        "link": "https://www.fujimiddleton.com/",
+        "quality": 3,
+        "health": 4,
+        "food-types": ["sushi", "sashimi", "bento box"],
+        "types": ["japanese"]
+    },
+    {
+        "name": "Culvers",
+        "quality": 3,
+        "health": 2,
+        "food-types": ["burger", "cheese curds", "custard"],
+        "types": ["american", "dessert"]
+    },
+    {
+        "name": "Cheese Cake Factory",
+        "link": "https://www.thecheesecakefactory.com/",
+        "quality": 4,
+        "health": 1,
+        "food-types": ["cheese cake", "burger", "chicken sandwhich"],
+        "types": ["american", "dessert"]
+    },
+    {
+        "name": "Dhaba",
+        "link": "https://dhabaindianbistro.com/",
+        "quality": 4,
+        "health": 3,
+        "food-types": ["naan", "curry"],
+        "types": ["indian"]
+    },
+    {
+        "name": "Cafe Zupas",
+        "link": "https://cafezupas.com/",
+        "quality": 4,
+        "health": 4,
+        "food-types": ["soup", "salad", "sweets", "light", "dessert"],
+        "types": ["cafe", "dessert"]
+    },
+    {
+        "name": "Biaggi's",
+        "link": "https://biaggis.com/locations/wisconsin-madison/",
+        "quality": 4,
+        "health": 3,
+        "food-types": ["pasta", "chicken", "meatballs"],
+        "types": ["italian"]
+    },
+    {
+        "name": "Pho Nam Noodle House",
+        "quality": 4,
+        "health": 4,
+        "food-types": ["pork", "chicken", "shrimp", "pho", "noodles"],
+        "types": ["vietnamese"]
+    },
+    {
+        "name": "Wing Stop",
+        "link": "https://www.wingstop.com/",
+        "quality": 4,
+        "health": 2,
+        "food-types": ["wings", "chicken", "spicy"],
+        "types": ["american", "wings"]
+    },
+    {
+        "name": "Noodles",
+        "link": "https://www.noodles.com/",
+        "quality": 2,
+        "health": 3,
+        "food-types": ["pasta", "soup", "salad"],
+        "types": ["maerican"]
+    },
+    {
+        "name": "Jersey Mike's",
+        "link": "https://www.jerseymikes.com/",
+        "quality": 2,
+        "health": 3,
+        "food-types": ["subs", "chicken", "turkey", "roast beef"],
+        "types": ["american"]
+    },
+    {
+        "name": "Ancho & Agave",
+        "link": "https://www.anchoandagave.com/",
+        "quality": 2,
+        "health": 3,
+        "food-types": ["taco", "burrito", "spicy"],
+        "types": ["mexican"]
+    },
+    {
+        "name": "Raising Caine's",
+        "link": "",
+        "quality": 2,
+        "health": 2,
+        "food-types": ["chicken", "texas toast"],
+        "types": ["american"]
+    },
+    {
+        "name": "Poke it Up",
+        "link": "",
+        "quality": 3,
+        "health": 4,
+        "food-types": ["poke"],
+        "types": ["hawaiian"]
+    },
+    {
+        "name": "Miko Poke",
+        "link": "",
+        "quality": 3,
+        "health": 4,
+        "food-types": ["poke"],
+        "types": ["hawaiian"]
+    },
+    {
+        "name": "Strings",
+        "link": "",
+        "quality": 3,
+        "health": 4,
+        "food-types": ["ramen"],
+        "types": ["chinese"]
+    },
+    {
+        "name": "Ramen Kid",
+        "link": "",
+        "quality": 3,
+        "health": 4,
+        "food-types": ["ramen"],
+        "types": ["chinese"]
+    }
+]
