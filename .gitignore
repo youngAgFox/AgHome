@@ -1,1 +1,3 @@
 fridgeinv/.idea*
+*.class
+*/target**
