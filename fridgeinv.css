@@ -258,13 +258,17 @@ body.store-style {
 }
 
 #fridge-header:not(.hidden), #store-header:not(.hidden) {
-    border-bottom: 2px inset grey;
+    border-bottom: 2px outset slategrey;
     padding: 0.5rem;
     width: 100%;
     background-color: none;
     position: sticky;
     top: 0;
     left: 0;
+}
+
+#store-header:not(.hidden) {
+    border-color: white;
 }
 
 header .connection {

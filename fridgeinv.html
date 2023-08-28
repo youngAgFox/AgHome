@@ -33,11 +33,11 @@
             </div>
         </div>
         <div>
-            <label for="">Store:</label>
+            <label >Store:</label>
             <select name="store-select" id="store-select" disabled>
             </select>
-            <input type="text" name="newStore" id="store-add-input" class="" title="Test tooltip" maxlength="20">
-            <button id="store-add-btn" type="button">Create Store</button>
+            <input type="text" name="newStore" id="store-add-input" title="Test tooltip" maxlength="20" disabled>
+            <button id="store-add-btn" type="button" disabled>Create Store</button>
         </div>
     </header>
     <div id="inventory-store-container">
@@ -51,7 +51,7 @@
         <section id="inventory" style="grid-row: 1 / span 1; grid-column: 1 / span 1;">
             <h3 id="fridge-header" style="text-align: center; grid-column: auto / span 2;">Fridge</h2>
                 <!-- elements inserted here -->
-                <button id="inv-add" class="" style="font-size: 1.5rem;" disabled>+</button>
+                <button id="inv-add" style="font-size: 1.5rem;" disabled>+</button>
                 <form id="inv-add-form" class="hidden">
                     <p>
                         Add a new inventory item to the virtual fridge. Leaving the date blank fills in todays date.

@@ -1,8 +1,8 @@
-import { InventoryItem } from "./Objects.js";
+import * as InvObjects from "./Objects.js";
 import * as Database from "/db.js";
 // TODO add different menus / groups
 
-const STORE_ITEMS = [];
+const itemInputs = [];
 const QUANTITY_MIN = 0;
 const QUANTITY_INIT = 1;
 const QUANTITY_MAX = 99;
@@ -18,28 +18,18 @@ const connectionErrorImage = document.getElementById("connection-error-img");
 const connectingImage = document.getElementById("connecting-img");
 const connectedImage = document.getElementById("connected-img");
 
-initializeFromDatabase();
+Database.connect(initializeFromDatabase, databaseClosed, databaseError);
 
-async function initializeFromDatabase() {
-    try {
-        await Database.connect();
-        Database.addEventListener("close", databaseClosed);
-        Database.addEventListener("store-add", addStoreItem);
-        Database.addEventListener("inventory-add", addInventoryItem);
-        // this should send two messages - one to pop fridge, one to pop store and stores
-        Database.sendDataRequest();
-        console.log("Initialized screen");
-        connectingImage.classList.toggle("hidden", true);
-        connectedImage.classList.toggle("hidden", false);
-        connectionStatusLabel.classList.toggle("closed", false);
-        connectionStatusLabel.innerText = "Connected";
-    } catch (error) {
-        console.log("Failed to populate database: " + JSON.stringify(error));
-        connectingImage.classList.toggle("hidden", true);
-        connectionErrorImage.classList.toggle("hidden", false);
-        connectionStatusLabel.innerText = "Connection Error!";
-        connectionStatusLabel.classList.toggle("closed", true);
-    }
+function initializeFromDatabase() {
+    connectingImage.classList.toggle("hidden", true);
+    connectedImage.classList.toggle("hidden", false);
+    connectionStatusLabel.classList.toggle("closed", false);
+    connectionStatusLabel.innerText = "Connected";
+    setDisabledInputs(false);
+}
+
+function databaseError() {
+    console.log("ERROR: (Database): " + error);
 }
 
 function databaseClosed() {
@@ -47,6 +37,9 @@ function databaseClosed() {
     connectingImage.classList.toggle("hidden", true);
     connectionStatusLabel.classList.toggle("closed", true);
     connectionStatusLabel.innerText = "Connection Error!";
+
+    // redisable inputs
+    setDisabledInputs(true);
 }
 
 const inventory = document.getElementById("inventory");
@@ -65,7 +58,6 @@ const storeAddBtn = document.getElementById("store-add-btn");
 const storeSelect = document.getElementById("store-select");
 
 inventoryAddBtn.addEventListener("click", toggleAddInventoryItem);
-inventoryAddForm.addEventListener("submit", readNewInventoryItem);
 inventoryFormCancelBtn.addEventListener("click", toggleAddInventoryItem);
 inventoryFormSubmitBtn.addEventListener("click", handleAddInvSubmit);
 
@@ -73,6 +65,14 @@ toggleFridgeBtn.addEventListener("click", () => toggleFridgeStoreButton(toggleFr
 toggleStoreBtn.addEventListener("click", () => toggleFridgeStoreButton(toggleStoreBtn, toggleFridgeBtn));
 toggleStoreBtn.addEventListener("click", () => toggleStoreStyle("store"));
 toggleFridgeBtn.addEventListener("click", () => toggleStoreStyle("fridge"));
+
+function setDisabledInputs(isDisabled) {
+    inventoryAddBtn.disabled = isDisabled;
+    inventoryFormSubmitBtn.disabled = isDisabled;
+    storeAddBtn.disabled = isDisabled;
+    storeSelect.disabled = isDisabled;
+}
+
 
 function toggleStoreStyle(btnType) {
     console.log("Toggling store style: " + btnType);
@@ -89,9 +89,6 @@ function toggleFridgeStoreButton(toggleTarget, other) {
     toggleTarget.classList.toggle("toggled", true);
     other.classList.toggle("toggled", false);
 }
-
-// TODO Remove this out once testing is complete
-addInventoryItem(new InventoryItem("Test"));
 
 function handleAddInvSubmit() {
     if (!inventoryAddForm.reportValidity()) {
@@ -111,15 +108,13 @@ function toggleAddInventoryItem() {
     inventoryAddForm.classList.toggle("hidden");
 }
 
-// Reads in new item, then adds to inventory
+// Reads in new item parameters from form, returning object
 function readNewInventoryItem() {
-    const item = new InventoryItem(
-        inventoryFormName.value,
-        inventoryFormQuantity.value,
-        new Date(inventoryFormLastAdded.value)
-    );
-    validateInventoryItem(item);
-    return item;
+    return {
+        name: inventoryFormName.value,
+        quantity: inventoryFormQuantity.value,
+        date: new Date(inventoryFormLastAdded.value)
+    }; 
 }
 
 function validateInventoryItem(invItem) {
@@ -142,7 +137,14 @@ function validateInventoryItem(invItem) {
     return true;
 }
 
-function addInventoryItem(invItem) {
+function addInventoryItem(invItemParams) {
+    if (invItemParams === undefined) {
+        throw Error("invItemParameters are required");
+    }
+    InvObjects.createInvItem(createAndAddInventoryModel, invItemParams);
+}
+
+function createAndAddInventoryModel(invItem) {
     const item = document.createElement("div");
     item.classList.add("inventory-item");
     item.style = "flex-wrap: wrap;";
