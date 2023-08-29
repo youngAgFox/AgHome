@@ -56,6 +56,7 @@ const body = document.getElementsByTagName("body")[0];
 const store = document.getElementById("store");
 const storeAddBtn = document.getElementById("store-add-btn");
 const storeSelect = document.getElementById("store-select");
+const storeAddInput = document.getElementById("store-add-input");
 
 inventoryAddBtn.addEventListener("click", toggleAddInventoryItem);
 inventoryFormCancelBtn.addEventListener("click", toggleAddInventoryItem);
@@ -66,13 +67,41 @@ toggleStoreBtn.addEventListener("click", () => toggleFridgeStoreButton(toggleSto
 toggleStoreBtn.addEventListener("click", () => toggleStoreStyle("store"));
 toggleFridgeBtn.addEventListener("click", () => toggleStoreStyle("fridge"));
 
+storeAddBtn.addEventListener("click", () => createNewStore(storeAddInput.value));
+
 function setDisabledInputs(isDisabled) {
     inventoryAddBtn.disabled = isDisabled;
     inventoryFormSubmitBtn.disabled = isDisabled;
     storeAddBtn.disabled = isDisabled;
+    storeAddInput.disabled = isDisabled;
     storeSelect.disabled = isDisabled;
 }
 
+function getLoadedStores() {
+    const stores = [];
+    let storeName;
+    for (const child of storeSelect.children) {
+        storeName = child.innerText.trim();
+        if (!storeName.isBlank()) {
+            stores.push(storeName);
+        } else {
+            console.log("WARNING: Blank names in store Select element");
+        }
+    }
+    console.log("Loaded stores:", stores);
+    return stores;
+}
+
+function createNewStore(storeName) {
+    const stores = getLoadedStores();
+    if (stores.includes(storeName)) {
+        alert("The stores already contains a name that resolves to '" + storeName + "'")
+        return;
+    }
+    Database.requestCreateStore(storeName, addStoreItemDB, (errorMessage) => {
+        console.log(`WARNING: Failed to create store '${storeName}': ${errorMessage}`);
+    });
+}
 
 function toggleStoreStyle(btnType) {
     console.log("Toggling store style: " + btnType);
@@ -194,6 +223,10 @@ function toggleItemToStore(invItem, addToStoreButton) {
     } else {
         addStoreItem(invItem);
     }
+}
+
+function addStoreItemDB(params) {
+
 }
 
 function addStoreItem(invItem) {

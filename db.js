@@ -30,21 +30,33 @@ export function close() {
     _socket = null;
 }
 
-export function sendDataRequest() {
-    sendRequest("dataRequest");
+export function sendStoreDataRequest(func, errorFunc) {
+    sendRequest("sendStores", func, errorFunc);
 }
 
-export function requestCreateStore(storeName) {
-    sendRequest(`createStore:"${storeName}"`);
+export function sendInventoryDataRequest(func, errorFunc) {
+    sendRequest("sendInventory", func, errorFunc);
 }
 
-export function requestNextSurrogateKey(keyName, func) {
-    sendRequest("surrogateKey", `keyName=${keyName}`, func);
+export function requestCreateStore(storeName, func, errorFunc) {
+    sendRequest("createStore", {storeName}, func, errorFunc);
 }
 
-function sendRequest(data, params, func) {
-    _requests.push({requestSeq: _requestSeq, func});
-    _socket.send(`${data}?${params};requestSeq=${_requestSeq++}`);
+export function requestNextSurrogateKey(key, func, errorFunc) {
+    sendRequest("surrogateKey", {key}, func, errorFunc);
+}
+
+function sendRequest(data, params = {}, func = logUnhandledFunction, errorFunc = logUnhandledFunction) {
+    _requests.push({requestSeq: _requestSeq, func, errorFunc});
+    let paramsStr = `requestSeq=${_requestSeq++}`;
+    for (const [key, value] of Object.entries(params)) {
+        paramsStr += `;${key}=${value}`;
+    }
+    _socket.send(`${data}?${paramsStr}`);
+}
+
+function logUnhandledFunction(e) {
+    console.log("WARNING: unhandled response function called: " + JSON.stringify(e));
 }
 
 function onOpen(event) {
@@ -59,8 +71,47 @@ function onClose(event) {
     _onClose(event);
 }
 
+// message {command, parameters}
 function onMessage(event) {
-    console.log("Received message: " + event.data);
+    const message = readMessage(event.data);
+    console.log(`Received message: ${message.command} :: ${JSON.stringify(message.parameters)}`);
+    switch (message.command) {
+        case "error":
+        case "response":
+            if(message.parameters.requestSeq !== undefined) {
+                for (const request of _requests) {
+                    if (request.requestSeq === message.parameters.requestSeq) {
+                        if (message.command === "response") {
+                            request.func(message.parameters);
+                        } else {
+                            request.errorFunc(message.parameters.value);
+                        }
+                    }
+                }
+            } else {
+                console.log(`WARNING: recieved '${message.command}' with undefined 'requestSeq': ${message.parameters.value}`);
+            }
+            break;
+        case "createStore":
+            break;
+        case "createInvItem":
+            break;
+        case "deleteStore":
+            break;
+        case "deleteInvItem":
+            break;
+    }
+}
+
+function readMessage(rawMessage) {
+    const command = rawMessage.split("?", 1);
+    const paramPairs = rawMessage.substr(rawMessage.indexOf("?") + 1).split(";");
+    const parameters = paramPairs .reduce((prev, value) => {
+        const parts = value.split("=");
+        prev[parts[0]] = parts[1];
+        return prev;
+    }, {/* Pass new object as initial arg */});
+    return {command, parameters};
 }
 
 function onError(event) {

@@ -3,13 +3,11 @@ package com.ag;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @ServerEndpoint(value = "/Server")
 public class Server {
-
-    private final IOException messageFormatException = 
-        new IOException("Not a valid command. Messages should be in format: <cmd>[?argname=argvalue[;argname=argvalue]*]");
 
     public Server() {
         System.out.println("Testing server is being instantiated");
@@ -22,19 +20,42 @@ public class Server {
     }
 
     @OnMessage
-    public String onMessage(Session session, String message) throws IOException {
-        System.out.println("Received message: " + session + " :: " + message);
-        Message parsed = new Message(message);
-        System.out.println(parsed);
-        Map<String, String> params = parsed.getParameters();
-        switch (parsed.getCommand()) {
+    public String onMessage(Session session, String messageData) throws IOException {
+        System.out.println("Received message: " + session + " :: " + messageData);
+        Message received = Message.parseMessage(messageData);
+        System.out.println(received);
+        Map<String, String> params = received.getParameters();
+        Map<String, String> args = new HashMap<>();
+
+        switch (received.getCommand()) {
             case "surrogateKey":
-                if (!params.containsKey("keyName")) {
-                    throw new IOException("Expected one argument <String: keyName>");
+                if (!params.containsKey("key")) {
+                    return createErrorMessage("Expected one argument <String: key>").toMessageString();
                 }
-                return String.valueOf(Synch.nextKey(params.get("keyName")));
-            default: throw messageFormatException;
+                args.put("value", String.valueOf(Synch.nextKey(params.get("key"))));
+                return createResponseMessage(received, args).toMessageString();
+            case "createStore":
+                if (!params.containsKey("name")) {
+                    return createErrorMessage("Expected one argument <String: name>").toMessageString();
+                }
+            default: return createErrorMessage("Unknown command: '" + received.getCommand() + "'").toMessageString();
         }
+    }
+
+    private Message createResponseMessage(Message received, Map<String, String> args) {
+        String requestSeq = received.getParameters().get("requestSeq");
+        if (null == requestSeq) {
+            return createErrorMessage("Missing 'requestSeq'!");
+        } 
+        Message message = new Message("response", args);
+        message.getParameters().put("requestSeq", requestSeq);
+        return message;
+    }
+
+    private Message createErrorMessage(String errorMessage) {
+        Message message = new Message("error");
+        message.getParameters().put("value", errorMessage);
+        return message;
     }
 
     @OnClose
@@ -50,10 +71,10 @@ public class Server {
         throwable.printStackTrace();
     }
 
-    private void broadcast(Session origin, String message) {
+    private void broadcast(Session origin, Message message) {
         for (Session session : origin.getOpenSessions()) {
             if (session.isOpen()) {
-                session.getAsyncRemote().sendText(message);
+                session.getAsyncRemote().sendText(message.toMessageString());
             }
         }
     }
