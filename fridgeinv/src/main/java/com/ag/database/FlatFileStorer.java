@@ -16,7 +16,7 @@ import java.util.Map;
  * Stores objects in a file sequentially. Stores and retrieves file indices for objects and reads them in as needed.
  * Attempts to control the fragmentation of the file (empty spaces in the data) that comes from removal.
  */
-public class FlatFileStorer implements Storer<InventoryItem> {
+public class FlatFileStorer<T extends Storable & Serializable> implements Storer<T> {
 
     private File metaInfoFile;
     private File objectFile;
@@ -27,11 +27,6 @@ public class FlatFileStorer implements Storer<InventoryItem> {
      */
     public FlatFileStorer()  {
 
-    }
-
-    private class FileIndex implements Serializable {
-        public long position;
-        public long size;
     }
 
     // Serves as a map from the unique ID of an object to the file position of that object.
@@ -94,7 +89,7 @@ public class FlatFileStorer implements Storer<InventoryItem> {
     }
 
     @Override
-    public List<InventoryItem> loadAll(long start, long end) throws IOException {
+    public List<T> loadAll(long start, long end) throws IOException {
         throw new UnsupportedOperationException("Unimplemented method 'loadAll'");
     }
 
@@ -104,20 +99,20 @@ public class FlatFileStorer implements Storer<InventoryItem> {
     }
 
     @Override
-    public void saveAll(List<InventoryItem> objects) throws IOException {
-        for (InventoryItem item : objects) {
-            saveObject(item);
+    public void saveAll(List<T> objects) throws IOException {
+        for (T obj : objects) {
+            saveObject(obj);
         }
         saveMetaInfo();
     }
 
     @Override
-    public void save(InventoryItem object) throws IOException {
+    public void save(T object) throws IOException {
         saveObject(object);
         saveMetaInfo();
     }
 
-    private void saveObject(InventoryItem object) throws IOException {
+    private void saveObject(T object) throws IOException {
         FileIndex fileIndex = objectFilePositions.get(object.getId());
         if (null == fileIndex) {
             // unpersisted object
@@ -159,18 +154,19 @@ public class FlatFileStorer implements Storer<InventoryItem> {
         return outCounter.getTotalWrittenBytes();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public InventoryItem load(long id) throws IOException {
+    public T load(long id) throws IOException {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(objectFile))) {
             ois.skip(objectFilePositions.get(id).position);
-            return (InventoryItem) ois.readObject();
+            return (T) ois.readObject();
         } catch (ClassNotFoundException e) {
             throw new IOException("The object file");
         }
     }
 
     @Override
-    public void delete(InventoryItem object) throws IOException {
+    public void delete(T object) throws IOException {
         deleteId(object.getId());
     }
 
@@ -189,8 +185,8 @@ public class FlatFileStorer implements Storer<InventoryItem> {
     }
 
     @Override
-    public void deleteAll(List<InventoryItem> items) throws IOException {
-        for (InventoryItem item : items) {
+    public void deleteAll(List<T> items) throws IOException {
+        for (T item : items) {
             objectFilePositions.remove(item.getId());
         }
         saveMetaInfo();

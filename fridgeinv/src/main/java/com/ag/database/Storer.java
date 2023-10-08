@@ -1,6 +1,7 @@
 package com.ag.database;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -8,7 +9,7 @@ import java.util.List;
  * 
  * @author asegedi
  */
-public interface Storer<T extends Storeable> {
+public interface Storer<T extends Storable & Serializable> {
 
     /**
      * Returns a list of objects in range of the start and end index.

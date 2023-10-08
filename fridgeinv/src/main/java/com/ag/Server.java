@@ -2,6 +2,12 @@ package com.ag;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+
+import com.ag.database.FlatFileStorer;
+import com.ag.database.Storer;
+import com.ag.database.InventoryItem;
+import com.ag.database.Store;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,8 +15,27 @@ import java.util.Map;
 @ServerEndpoint(value = "/Server")
 public class Server {
 
+    private FlatFileStorer<InventoryItem> itemStorer = new FlatFileStorer<>();
+    private FlatFileStorer<Store> storeStorer = new FlatFileStorer<>();
+
     public Server() {
-        System.out.println("Testing server is being instantiated");
+        System.out.println("Server instantiation start");
+        try {
+            itemStorer.open("itemStorer_meta_version1", "itemStorer_version1");
+            storeStorer.open("storeStorer_meta_version1", "storeStorer_version1");
+
+
+            // TESTING
+            InventoryItem item = new InventoryItem(Synch.getInstance().nextKey("INV_ITEM"));
+            itemStorer.save(item);
+            // InventoryItem item = itemStorer.load(0);
+            // System.out.println("Item: " + item.getId());
+            
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize storer objects: ", e);
+        }
+
+        System.out.println("Server instantiated successfully");
     }
 
     @OnOpen
@@ -38,6 +63,10 @@ public class Server {
                 if (!params.containsKey("name")) {
                     return createErrorMessage("Expected one argument <String: name>").toMessageString();
                 }
+                args.put("value", String.valueOf("2"));
+                return createResponseMessage(received, args).toMessageString();
+            case "createItem":
+
             default: return createErrorMessage("Unknown command: '" + received.getCommand() + "'").toMessageString();
         }
     }

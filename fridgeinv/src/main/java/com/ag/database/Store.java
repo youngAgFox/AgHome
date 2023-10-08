@@ -2,15 +2,14 @@ package com.ag.database;
 
 import java.io.Serializable;
 
-public class InventoryItem implements Storable, Serializable {
+public class Store implements Storable, Serializable {
 
     private long id;
 
-    public InventoryItem() {
-
+    public Store() {
     }
 
-    public InventoryItem(long id) {
+    public Store(int id) {
         this.id = id;
     }
 
