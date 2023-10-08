@@ -1,26 +1,14 @@
 package com.ag.database;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 /**
- * Interface for storing and retrieving objects from a file.
+ * Interface whose implementations can store and retrieve objects in a persistable manner.
  * 
  * @author asegedi
  */
-public abstract class Storable<T> {
-
-    protected File file;
-
-    /**
-     * Creates a Storable and associates it with a given File object.
-     * 
-     * @param file the file to use to persist and load the Storable.
-     */
-    public Storable(File file) {
-        this.file = file;
-    }
+public interface Storer<T extends Storeable> {
 
     /**
      * Returns a list of objects in range of the start and end index.
@@ -29,6 +17,7 @@ public abstract class Storable<T> {
      * @param end the end index, exclusive
      * @return a list of all loaded objects.
      * @throws IOException on IO failure.
+     * @throws IndexOutOfRangeException on bad start or end index.
      */
     public abstract List<T> loadAll(long start, long end) throws IOException;
 
@@ -48,9 +37,8 @@ public abstract class Storable<T> {
      * allow retrieval of the objects using the {@link #load} or {@link #loadAll} methods.
      * 
      * @param objects the list of objects to save.
-     * @return true on successful save, false otherwise.
      */
-    public abstract boolean saveAll(List<T> objects) throws IOException;
+    public abstract void saveAll(List<T> objects) throws IOException;
 
     /**
      * Save a single object to the file.
@@ -59,10 +47,9 @@ public abstract class Storable<T> {
      * Retrieval of the object can be done using the {@link #load} or {@link #loadAll} methods.
      * 
      * @param object the object to save.
-     * @return
      * @throws IOException
      */
-    public abstract boolean save(T object) throws IOException;
+    public abstract void save(T object) throws IOException;
 
     /**
      * Load a particular object from the database using the objects id.
@@ -74,10 +61,24 @@ public abstract class Storable<T> {
     public abstract T load(long id) throws IOException;
 
     /**
-     * Returns a unique ID for the object.
+     * Deletes the object from the storer. Whether or not the object information is wiped is at the implementation's
+     * discretion. At most all that is required is that the id the object used be freed.
      * 
-     * @param object the object to obtain the id of.
-     * @return the unique ID that represents the object.
+     * @param object
+     * @throws IOException
      */
-    public abstract long getId(T object);
+    public abstract void delete(T object) throws IOException;
+
+    /**
+     * Deletes the object from the storer. Whether or not the object information is wiped is at the implementation's
+     * discretion. At most all that is required is that the id the object used be freed.
+     * 
+     * @param object
+     * @throws IOException
+     */
+    public abstract void deleteId(long id) throws IOException;
+
+    public abstract void deleteAll(List<T> objects) throws IOException;
+
+    public abstract void deleteAllId(List<Long> ids) throws IOException;
 }

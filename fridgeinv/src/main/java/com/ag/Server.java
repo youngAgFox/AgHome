@@ -32,7 +32,7 @@ public class Server {
                 if (!params.containsKey("key")) {
                     return createErrorMessage("Expected one argument <String: key>").toMessageString();
                 }
-                args.put("value", String.valueOf(Synch.nextKey(params.get("key"))));
+                args.put("value", String.valueOf(Synch.getInstance().nextKey(params.get("key"))));
                 return createResponseMessage(received, args).toMessageString();
             case "createStore":
                 if (!params.containsKey("name")) {

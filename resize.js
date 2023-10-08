@@ -27,7 +27,7 @@ function resizeWindow() {
     // handle body grid when full screen
     invStoreContainer.classList.toggle("dual", isFullWidth);
 
-    // if we resize the window to large force remove store-style
+    // if we resize the window to large, force remove store-style
     if (isFullWidth) {
         body.classList.toggle("store-style", false);
         inventory.classList.toggle("hidden", false);
