@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Synch {
+
+    public static final String STORE_SURROGATE_KEY = "store_sk";
+
     private final File keyFile = new File(".keys");
     private Map<String, Long> surrogateKeys;
 

@@ -3,6 +3,8 @@ package com.ag.database;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Interface whose implementations can store and retrieve objects in a persistable manner.
@@ -10,17 +12,23 @@ import java.util.List;
  * @author asegedi
  */
 public interface Storer<T extends Storable & Serializable> {
+    
+    /**
+     * Returns the persisted states of all passed objects
+     * 
+     * @param objects
+     * @return a list of the persisted variants of the passed objects.
+     * @throws IOException
+     */
+    public abstract List<T> loadAll(List<T> objects) throws IOException;
 
     /**
-     * Returns a list of objects in range of the start and end index.
-     * 
-     * @param start the start index, inclusive
-     * @param end the end index, exclusive
-     * @return a list of all loaded objects.
-     * @throws IOException on IO failure.
-     * @throws IndexOutOfRangeException on bad start or end index.
+     * Returns the persisted states of all objects given by the passed ids.
+     * @param ids
+     * @return a list of the persisted variants of the passed object ids.
+     * @throws IOException
      */
-    public abstract List<T> loadAll(long start, long end) throws IOException;
+    public abstract List<T> loadAllId(List<Long> ids) throws IOException;
 
     /**
      * The number of saved entries in this Storable.
@@ -71,7 +79,7 @@ public interface Storer<T extends Storable & Serializable> {
     public abstract void delete(T object) throws IOException;
 
     /**
-     * Deletes the object from the storer. Whether or not the object information is wiped is at the implementation's
+     * Deletes the object with the given id from the storer. Whether or not the object information is wiped is at the implementation's
      * discretion. At most all that is required is that the id the object used be freed.
      * 
      * @param object
@@ -79,7 +87,59 @@ public interface Storer<T extends Storable & Serializable> {
      */
     public abstract void deleteId(long id) throws IOException;
 
+    /**
+     * Deletes all objects from the storer. Whether or not the object information is wiped is at the implementation's
+     * discretion. At most all that is required is that the id the object used be freed.
+     * 
+     * @param objects
+     * @throws IOException
+     */
     public abstract void deleteAll(List<T> objects) throws IOException;
 
+    /**
+     * Deletes all objects with the given id from the storer. Whether or not the object information is wiped is at the implementation's
+     * discretion. At most all that is required is that the id the object used be freed.
+     * 
+     * @param ids
+     * @throws IOException
+     */
     public abstract void deleteAllId(List<Long> ids) throws IOException;
+
+    /**
+     * Returns all the in use keys for this Storer. If this set does not contain a key, it has not been persisted yet.
+     * @return all unique persisted keys.
+     */
+    public abstract Set<Long> getIds() throws IOException;
+
+    /**
+     * Returns true if any persisted objects match the predicate.
+     * 
+     * @param matches
+     * @return true if any objects match the predicate.
+     */
+    public abstract boolean contains(Predicate<T> matches) throws IOException;
+
+    /**
+     * Returns true if the given id is persisted.
+     * 
+     * @param id
+     * @return true if the id is persisted, false otherwise.
+     */
+    public abstract boolean contains(Long id) throws IOException;
+
+    /**
+     * Returns the first object that matches the given predicate. Searches over all persisted objects.
+     * 
+     * @param matches
+     * @return the first matched object.
+     */
+    public abstract T matches(Predicate<T> matcher) throws IOException;
+
+    /**
+     * Returns all the objects that match the given predicate. Searches over all persisted objects.
+     * 
+     * @param matcher
+     * @return 
+     */
+    public abstract List<T> allMatches(Predicate<T> matcher) throws IOException;
 }

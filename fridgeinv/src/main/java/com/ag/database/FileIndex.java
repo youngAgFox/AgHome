@@ -1,6 +1,8 @@
 package com.ag.database;
 
-public class FileIndex {
+import java.io.Serializable;
+
+public class FileIndex implements Serializable {
     public long position;
     public long size;
 }

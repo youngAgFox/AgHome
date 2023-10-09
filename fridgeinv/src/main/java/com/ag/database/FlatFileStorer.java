@@ -8,9 +8,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Stores objects in a file sequentially. Stores and retrieves file indices for objects and reads them in as needed.
@@ -55,6 +59,7 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
         this.objectFile = objectFile;
 
         objectFilePositions = loadMetaInfo();
+        System.out.println("Meta info loaded with " + objectFilePositions.size() + " entries.");
     }
 
     @SuppressWarnings("unchecked")
@@ -67,7 +72,7 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
      */
     private Map<Long, FileIndex> loadMetaInfo() throws IOException {
         if (null == metaInfoFile) {
-            throw new IOException("Tried to load file indicies before successfully opening FlatFileStorer");
+            throw new IOException("Tried to load file meta data before successfully opening the meta data file");
         }
         if (!metaInfoFile.exists()) {
             return new HashMap<>();
@@ -77,7 +82,7 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
             // we save and load as array in order to overcome generic limitations
             return (Map<Long, FileIndex>) fileIndexMapObj;
         } catch (ClassNotFoundException e) {
-            throw new IOException("The first object stored in the file '" + metaInfoFile.getName() + "' was not the FileIndex[]");
+            throw new IOException("The first object stored in the file '" + metaInfoFile.getName() + "' was not the FileIndex map");
         }
     }
 
@@ -89,8 +94,21 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
     }
 
     @Override
-    public List<T> loadAll(long start, long end) throws IOException {
-        throw new UnsupportedOperationException("Unimplemented method 'loadAll'");
+    public List<T> loadAll(List<T> objects) throws IOException {
+        List<T> persistedObjects = new ArrayList<>();
+        for (T obj : objects) {
+            persistedObjects.add(load(obj.getId()));
+        }
+        return persistedObjects;
+    }
+
+    @Override 
+    public List<T> loadAllId(List<Long> ids) throws IOException {
+        List<T> persistedObjects = new ArrayList<>();
+        for (Long id : ids) {
+            persistedObjects.add(load(id));
+        }
+        return persistedObjects;
     }
 
     @Override
@@ -149,7 +167,7 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
         try (ObjectOutputStream sizeOutput = new ObjectOutputStream(outCounter)) {
             sizeOutput.writeObject(object);
         } catch (IOException ignored) {
-            throw new RuntimeException("This should be impossible. ObjectOutputStream threw IOException without performing IO.");
+            throw new RuntimeException("This should be impossible. ObjectOutputStream threw an IOException without performing IO.");
         }
         return outCounter.getTotalWrittenBytes();
     }
@@ -190,5 +208,48 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
             objectFilePositions.remove(item.getId());
         }
         saveMetaInfo();
+    }
+
+    @Override
+    public Set<Long> getIds() {
+        return Collections.unmodifiableSet(objectFilePositions.keySet());
+    }
+
+    @Override
+    public boolean contains(Predicate<T> matches) throws IOException {
+        for (Long id : getIds()) {
+            if (matches.test(load(id))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean contains(Long id) {
+        return getIds().contains(id);
+    }
+
+    @Override
+    public T matches(Predicate<T> matcher) throws IOException {
+        for (Long id : getIds()) {
+            T obj = load(id);
+            if (matcher.test(obj)) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<T> allMatches(Predicate<T> matcher) throws IOException {
+        List<T> matches = new ArrayList<>();
+        for (Long id : getIds()) {
+            T obj = load(id);
+            if (matcher.test(obj)) {
+                matches.add(obj);
+            }
+        }
+        return matches;
     }
 }
