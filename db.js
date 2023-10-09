@@ -1,7 +1,7 @@
 const _wsUri = "ws://" + window.location.host + "/Server";
 let _socket = null;
 let _isConnected = false;
-let _requestSeq = 0;
+let _request_seq = 0;
 const _requests = [];
 let _onConnect;
 let _onClose;
@@ -31,24 +31,24 @@ export function close() {
 }
 
 export function sendStoreDataRequest(func, errorFunc) {
-    sendRequest("sendStores", func, errorFunc);
+    sendRequest("get_all_store", func, errorFunc);
 }
 
 export function sendInventoryDataRequest(func, errorFunc) {
-    sendRequest("sendInventory", func, errorFunc);
+    sendRequest("get_all_inv_item", func, errorFunc);
 }
 
-export function requestCreateStore(storeName, func, errorFunc) {
-    sendRequest("createStore", {storeName}, func, errorFunc);
+export function requestCreateStore(name, func, errorFunc) {
+    sendRequest("create_store", {name}, func, errorFunc);
 }
 
 export function requestNextSurrogateKey(key, func, errorFunc) {
-    sendRequest("surrogateKey", {key}, func, errorFunc);
+    sendRequest("get_next_skey", {key}, func, errorFunc);
 }
 
 function sendRequest(data, params = {}, func = logUnhandledFunction, errorFunc = logUnhandledFunction) {
-    _requests.push({requestSeq: _requestSeq, func, errorFunc});
-    let paramsStr = `requestSeq=${_requestSeq++}`;
+    _requests.push({request_seq: _request_seq, func, errorFunc});
+    let paramsStr = `request_seq=${_request_seq++}`;
     for (const [key, value] of Object.entries(params)) {
         paramsStr += `;${key}=${value}`;
     }
@@ -78,9 +78,9 @@ function onMessage(event) {
     switch (message.command) {
         case "error":
         case "response":
-            if(message.parameters.requestSeq !== undefined) {
+            if(message.parameters.request_seq !== undefined) {
                 for (const request of _requests) {
-                    if (request.requestSeq === message.parameters.requestSeq) {
+                    if (request.request_seq === message.parameters.request_seq) {
                         if (message.command === "response") {
                             request.func(message.parameters);
                         } else {
@@ -89,16 +89,16 @@ function onMessage(event) {
                     }
                 }
             } else {
-                console.log(`WARNING: recieved '${message.command}' with undefined 'requestSeq': ${message.parameters.value}`);
+                console.log(`WARNING: recieved '${message.command}' with undefined 'request_seq': ${message.parameters.value}`);
             }
             break;
-        case "createStore":
+        case "create_store":
             break;
-        case "createInvItem":
+        case "create_inv_item":
             break;
-        case "deleteStore":
+        case "delete_store":
             break;
-        case "deleteInvItem":
+        case "delete_inv_item":
             break;
     }
 }

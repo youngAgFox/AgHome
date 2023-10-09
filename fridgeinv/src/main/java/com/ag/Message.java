@@ -44,7 +44,7 @@ public class Message {
         return command;
     }
 
-    public String toMessageString() {
+    public String toSerializedString() {
         StringBuilder sb = new StringBuilder(command);
         if (!parameters.isEmpty()) {
             sb.append("?");
