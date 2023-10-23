@@ -1,26 +1,40 @@
 package com.ag.database;
 
-import java.io.Serializable;
+import java.util.Map;
 
-public class Store implements Storable, Serializable {
+public class Store extends Storable {
 
-    private long id;
-    private String name;
+    private enum Property {
+        NAME;
 
-    public Store() {
+        public String getKey() {
+            return EnumHelper.toPropertyString(this);
+        }
     }
 
-    public Store(long id, String name) {
-        this.id = id;
+    public Store() {}
+
+    public Store(long id) {
+        super(id);
     }
 
     public String getName() {
-        return name;
+        return getString(Property.NAME.getKey());
+    }
+
+    public void setName(String name) {
+        set(Property.NAME.getKey(), name);
     }
 
     @Override
-    public long getId() {
-        return id;
-    }
+    public void initialize(Map<String, String> params) {
+        ParameterHelper.validateParametersAreNotNull(params, Property.NAME.getKey());
 
+        setString(params, Property.NAME.getKey());
+
+        Storer<Store> storeStorer = StorerFactory.getStoreStorer();
+        final String storeName = getName();
+        ParameterHelper.validateUniqueParameter("Store name '" + storeName + "' already exists (check is case insensitive).", 
+            storeStorer, store -> store.getName().equalsIgnoreCase(storeName));
+    }
 }

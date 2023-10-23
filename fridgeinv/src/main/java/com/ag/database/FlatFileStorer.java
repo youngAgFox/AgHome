@@ -103,7 +103,7 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
     }
 
     @Override 
-    public List<T> loadAllId(List<Long> ids) throws IOException {
+    public List<T> loadAllId(Set<Long> ids) throws IOException {
         List<T> persistedObjects = new ArrayList<>();
         for (Long id : ids) {
             persistedObjects.add(load(id));

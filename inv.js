@@ -1,4 +1,3 @@
-import * as InvObjects from "./Objects.js";
 import * as Database from "/db.js";
 // TODO add different menus / groups
 
@@ -26,6 +25,11 @@ function initializeFromDatabase() {
     connectionStatusLabel.classList.toggle("closed", false);
     connectionStatusLabel.innerText = "Connected";
     setDisabledInputs(false);
+    Database.requestStoreNames(initStores);
+}
+
+function initStores(names) {
+    console.log("init stores: ", names);
 }
 
 function databaseError() {
@@ -111,7 +115,6 @@ function toggleStoreStyle(btnType) {
 }
 
 function toggleFridgeStoreButton(toggleTarget, other) {
-    console.log("Toggling button");
     if (toggleTarget.classList.contains("toggled")) {
         return;
     }
@@ -139,19 +142,25 @@ function toggleAddInventoryItem() {
 
 // Reads in new item parameters from form, returning object
 function readNewInventoryItem() {
-    return {
+    const invItem = {
         name: inventoryFormName.value,
         quantity: inventoryFormQuantity.value,
-        date: new Date(inventoryFormLastAdded.value)
+        lastAdded: isBlankOrNull(inventoryFormLastAdded.value) ? new Date(Date()) : new Date(inventoryFormLastAdded.value)
     }; 
+    return invItem;
+}
+
+function isBlankOrNull(str) {
+    if (null === str || undefined === str) {
+        return true;
+    }
+    str = str.trim();
+    return "" === str;
 }
 
 function validateInventoryItem(invItem) {
     if (undefined === invItem || null === invItem) {
         throw new Error("Inventory item is null undefined.");
-    }
-    if (!(invItem instanceof InventoryItem)) {
-        throw new Error("Inventory item is not of type InventoryItem.");
     }
     if (invItem.quantity < QUANTITY_MIN || invItem.quantity > QUANTITY_MAX) {
         throw new Error(
@@ -170,7 +179,9 @@ function addInventoryItem(invItemParams) {
     if (invItemParams === undefined) {
         throw Error("invItemParameters are required");
     }
-    InvObjects.createInvItem(createAndAddInventoryModel, invItemParams);
+    Database.requestCreateInventoryItem(invItemParams, createAndAddInventoryModel, 
+            e => alert("Failed to create inventory item with fields: " + JSON.stringify(invItemParams) 
+            + " :: " + JSON.stringify(e)));
 }
 
 function createAndAddInventoryModel(invItem) {
@@ -244,7 +255,7 @@ function deleteInvItem(invItemDiv, invItem) {
         alert("Failed to delete item - database is not connected.");
         return;
     }
-    console.log("InvItem: " + JSON.stringify(invItem));
+    console.log("Deleting InvItem: " + JSON.stringify(invItem));
     invItemDiv.remove();
     Database.deleteItem(invItem);
 }
@@ -321,6 +332,7 @@ function addQuantityControl(invItem, classTarget, appendTarget) {
 
 function formatDate(date) {
     if (date === undefined || date === null) {
+        console.log("Bad date", date);
         return "?";
     }
 

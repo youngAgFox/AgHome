@@ -1,7 +1,6 @@
 package com.ag.database;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -11,7 +10,7 @@ import java.util.function.Predicate;
  * 
  * @author asegedi
  */
-public interface Storer<T extends Storable & Serializable> {
+public interface Storer<T extends Storable> {
     
     /**
      * Returns the persisted states of all passed objects
@@ -28,7 +27,7 @@ public interface Storer<T extends Storable & Serializable> {
      * @return a list of the persisted variants of the passed object ids.
      * @throws IOException
      */
-    public abstract List<T> loadAllId(List<Long> ids) throws IOException;
+    public abstract List<T> loadAllId(Set<Long> ids) throws IOException;
 
     /**
      * The number of saved entries in this Storable.

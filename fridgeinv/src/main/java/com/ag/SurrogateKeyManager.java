@@ -9,17 +9,20 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Synch {
+public class SurrogateKeyManager {
 
     public static final String STORE_SURROGATE_KEY = "store_sk";
+    public static final String INV_ITEM_SURROGATE_KEY = "inv_item_sk";
 
-    private final File keyFile = new File(".keys");
+    private static final long SURROGATE_KEY_FIRST_KEY = 1;
+
+    private final File keyFile = new File(".fridgeinv", "keys");
     private Map<String, Long> surrogateKeys;
 
-    private static Synch instance;
+    private static SurrogateKeyManager instance;
 
     @SuppressWarnings("unchecked")
-    private Synch() {
+    private SurrogateKeyManager() {
         if (keyFile.exists()) {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(keyFile))) {
                 surrogateKeys = (Map<String, Long>) ois.readObject();
@@ -31,16 +34,16 @@ public class Synch {
         }
     }
 
-    public static Synch getInstance() {
+    public static SurrogateKeyManager getInstance() {
         if (null == instance) {
-            instance = new Synch();
+            instance = new SurrogateKeyManager();
         }
         return instance;
     }
 
     public synchronized long nextKey(String keyName) {
-        long surrogate = surrogateKeys.getOrDefault(keyName, 0L);
-        surrogateKeys.put(keyName, surrogate + 1L);
+        long surrogate = surrogateKeys.getOrDefault(keyName, SURROGATE_KEY_FIRST_KEY);
+        surrogateKeys.put(keyName, surrogate + 1);
         saveKeys();
         return surrogate;
     }

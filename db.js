@@ -1,8 +1,9 @@
 const _wsUri = "ws://" + window.location.host + "/Server";
+const _is_date_field_regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
 let _socket = null;
 let _isConnected = false;
 let _request_seq = 0;
-const _requests = [];
+let _requests = [];
 let _onConnect;
 let _onClose;
 let _onError;
@@ -30,29 +31,47 @@ export function close() {
     _socket = null;
 }
 
-export function sendStoreDataRequest(func, errorFunc) {
+export function requestStoreData(name, func, errorFunc) {
+    sendRequest("get_store_data", {name}, func, errorFunc);
+}
+
+export function requestStoreNames(func, errorFunc) {
     sendRequest("get_all_store", func, errorFunc);
 }
 
-export function sendInventoryDataRequest(func, errorFunc) {
-    sendRequest("get_all_inv_item", func, errorFunc);
+export function requestShelfNames(func, errorFunc) {
+    sendRequest("get_all_shelf", func, errorFunc);
+}
+
+export function requestShelfData(name, func, errorFunc) {
+    sendRequest("get_all_shelf_inv_item", {name}, func, errorFunc);
 }
 
 export function requestCreateStore(name, func, errorFunc) {
     sendRequest("create_store", {name}, func, errorFunc);
 }
 
-export function requestNextSurrogateKey(key, func, errorFunc) {
-    sendRequest("get_next_skey", {key}, func, errorFunc);
+export function requestCreateInventoryItem(invItem, func, errorFunc) {
+    sendRequest("create_inv_item", invItem, func, errorFunc);
+}
+
+export function requestDeleteItem(invItem, func, errorFunc) {
+
 }
 
 function sendRequest(data, params = {}, func = logUnhandledFunction, errorFunc = logUnhandledFunction) {
     _requests.push({request_seq: _request_seq, func, errorFunc});
     let paramsStr = `request_seq=${_request_seq++}`;
     for (const [key, value] of Object.entries(params)) {
-        paramsStr += `;${key}=${value}`;
+        if (value instanceof Date) {
+            paramsStr += `;${key}=${serializeDate(value)}`;
+        } else {
+            paramsStr += `;${key}=${value}`;
+        }
     }
-    _socket.send(`${data}?${paramsStr}`);
+    const request = `${data}?${paramsStr}`;
+    console.log("Sending", request);
+    _socket.send(request);
 }
 
 function logUnhandledFunction(e) {
@@ -74,33 +93,60 @@ function onClose(event) {
 // message {command, parameters}
 function onMessage(event) {
     const message = readMessage(event.data);
-    console.log(`Received message: ${message.command} :: ${JSON.stringify(message.parameters)}`);
-    switch (message.command) {
-        case "error":
+    console.log(`Received message: '${message.command}' :: ${JSON.stringify(message.parameters)}`);
+    // toString() is necessary here since switch statments use strict comparison
+    switch (message.command.toString()) {
         case "response":
             if(message.parameters.request_seq !== undefined) {
+                const ongoingRequests = [];
                 for (const request of _requests) {
-                    if (request.request_seq === message.parameters.request_seq) {
-                        if (message.command === "response") {
-                            request.func(message.parameters);
+                    if (request.request_seq.toString() === message.parameters.request_seq.toString()) {
+                        if (message.parameters.error_ind.toString() === "false") {
+                            request.func(deserializeParameters(message.parameters));
                         } else {
-                            request.errorFunc(message.parameters.value);
+                            request.errorFunc(deserializeParameters(message.parameters));
                         }
+                    } else {
+                        ongoingRequests.push(request);
                     }
                 }
+                _requests = ongoingRequests;
             } else {
-                console.log(`WARNING: recieved '${message.command}' with undefined 'request_seq': ${message.parameters.value}`);
+                console.log(`WARNING: recieved '${message.command}' with undefined 'request_seq': ${deserializeParameters(message.parameters)}`);
             }
             break;
         case "create_store":
-            break;
         case "create_inv_item":
-            break;
         case "delete_store":
-            break;
         case "delete_inv_item":
+            console.log("Recieved message with command: '" + message.command + "'");
+            break;
+        default: console.log("Unrecognized command: '" + message.command + "' :: " + JSON.stringify(message.parameters));
             break;
     }
+}
+
+function deserializeParameters(params) {
+    for (const [key, value] of Object.entries(params)) {
+        if (isDateField(value.toString())) {
+            params[key] = new Date(value.toString());
+        }
+    }
+    return params;
+}
+
+function isDateField(field) {
+    return _is_date_field_regex.test(field);
+}
+
+function serializeDate(date) {
+    const year = `${date.getFullYear()}`.padStart(2, "0");
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    const hours = `${date.getHours()}`.padStart(2, "0");
+    const minutes = `${date.getMinutes()}`.padStart(2, "0");
+    const seconds = `${date.getSeconds()}`.padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
 function readMessage(rawMessage) {
@@ -123,4 +169,3 @@ export function isConnected() {
     return _isConnected;
 }
 
-export function deleteItem(invItem) {}
