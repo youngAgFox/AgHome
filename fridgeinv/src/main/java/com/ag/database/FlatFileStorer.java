@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +55,9 @@ public class FlatFileStorer<T extends Storable & Serializable> implements Storer
         if (indexFile.equals(objectFile)) {
             throw new IOException("Cannot use the same file for index file and object file.");
         }
+
+        Files.createDirectories(indexFile.getParentFile().toPath()); 
+        Files.createDirectories(objectFile.getParentFile().toPath()); 
 
         this.metaInfoFile = indexFile;
         this.objectFile = objectFile;

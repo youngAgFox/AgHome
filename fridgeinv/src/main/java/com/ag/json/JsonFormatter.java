@@ -1,28 +1,45 @@
-package com.ag;
+package com.ag.json;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class TransmissionHelper {
+import com.ag.DynamicObject;
 
-    private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+import util.DateUtils;
 
-    public static Date parseDate(String dateString) {
-        try {
-            return formatter.parse(dateString);
-        } catch (ParseException e) {
-            throw new RuntimeException("Failed to parse '" + dateString + "'", e);
-        }
+/**
+ * Writes formatted valid Json Strings from {@link DynamicObject} models or other objects.
+ */
+public class JsonFormatter {
+    
+    private boolean isCompactFormat = true;
 
+    public JsonFormatter() {}
+
+    public JsonFormatter(boolean isCompactFormat) {
+        this.isCompactFormat = isCompactFormat;
     }
 
-    public static String formatDate(Date date) {
-        return formatter.format(date);
+    public boolean isCompactFormat() {
+        return isCompactFormat;
     }
+
+    public void setCompactFormat(boolean isCompactFormat) {
+        this.isCompactFormat = isCompactFormat;
+    }
+
+    public String format(Object object) {
+        // FIXME
+        return "";
+    }
+
+    public void formatToStream(Object object, OutputStream out) {
+        // FIXME
+    }
+
 
     public static String toTransmissionString(Object obj) {
         String value = null;
@@ -47,7 +64,7 @@ public class TransmissionHelper {
                 value = toTransmissionMapString((Map<?,?>) obj);
             } else if (obj instanceof Date) {
                 // special date handling
-                value = formatDate((Date) obj);
+                value = DateUtils.formatDate((Date) obj);
             }
             
             // default to the objects toString()

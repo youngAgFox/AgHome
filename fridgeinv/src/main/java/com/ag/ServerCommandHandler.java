@@ -1,6 +1,7 @@
 package com.ag;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +12,8 @@ import com.ag.database.InventoryItem;
 import com.ag.database.Storable;
 import com.ag.database.Store;
 import com.ag.database.Storer;
-import com.ag.database.StorerFactory;
+import com.ag.json.JsonParser;
+import com.ag.database.FlatFileStorerFactory;
 
 public class ServerCommandHandler {
 
@@ -23,6 +25,8 @@ public class ServerCommandHandler {
     private static final String GET_ALL_SHELF_INV_ITEM = "get_all_shelf_inv_item";
 
     // argument keys
+    public static final String VALUE = "value";
+    public static final String COMMAND = "command";
     public static final String RETURN_VALUE = "value";
     public static final String ERROR_IND = "error_ind";
     public static final String ERROR_MESSAGE = "error_msg";
@@ -34,9 +38,9 @@ public class ServerCommandHandler {
 
     private ServerCommandHandler() {
         // handlers setup
-        commandHandlers.put(CREATE_INVENTORY_ITEM, params -> createInventoryItem(params));
-        commandHandlers.put(CREATE_STORE, params -> createStore(params));
-        commandHandlers.put(GET_ALL_STORE, params -> getAllStore(params));
+        commandHandlers.put(CREATE_INVENTORY_ITEM, args -> respondToCreateAndSaveStorable(args, InventoryItem.class));
+        commandHandlers.put(CREATE_STORE, args -> respondToCreateAndSaveStorable(args, Store.class));
+        commandHandlers.put(GET_ALL_STORE, args -> getAllStore(args));
 
         // broadcast commands setup
         broadcastCommands.add(CREATE_STORE);
@@ -51,92 +55,74 @@ public class ServerCommandHandler {
     }
 
     private interface CommandHandler {
-        Map<String, String> handle(Map<String, String> params);
+        DynamicObject handle(DynamicObject args);
     }
 
-    public Map<String, String> handleCommand(String command, Map<String, String> parameters) {
-        // always make sure the parameters have necessary values
-        if (null == parameters.get(ERROR_IND)) {
-            parameters.put(ERROR_IND, String.valueOf(false));
+    public DynamicObject handleRequest(DynamicObject request) {
+        // always make sure the args have necessary values
+        if (!request.containsKey(ERROR_IND)) {
+            request.put(ERROR_IND, false);
         }
 
         try {
-            return commandHandlers.getOrDefault(command, params -> returnNoSuchCommand(command, params)).handle(parameters);
+            return commandHandlers.getOrDefault(request.get(COMMAND), args -> returnNoSuchCommand(args)).handle(request);
         } catch (Exception e) {
             e.printStackTrace();
-            return returnError(parameters, e.getMessage());
+            return setError(request, e.getMessage());
         }
     }
 
-    public boolean isBroadcasted(String command) {
-        return broadcastCommands.contains(command);
+    public boolean isBroadcasted(DynamicObject args) {
+        return broadcastCommands.contains(args.get(COMMAND));
     }
     
-    private <T extends Storable> void persistStorable(Storer<T> storer, T storable) {
+    @SuppressWarnings("unchecked")
+    private <T extends Storable> void persistStorable(T storable) {
         try {
+            Storer<T> storer = (Storer<T>) FlatFileStorerFactory.getStorer(storable.getClass());
             storer.save(storable);
         } catch (IOException e) {
             throw new RuntimeException("Failed to persist storable", e);
         }
     }
 
-    public Map<String, String> createInventoryItem(Map<String, String> params) {
-        InventoryItem item = new InventoryItem(SurrogateKeyManager.getInstance().nextKey(SurrogateKeyManager.INV_ITEM_SURROGATE_KEY));
-        item.initialize(params);
-        persistStorable(StorerFactory.getItemStorer(), item);
-        return returnBoolean(params, true);
+    public <T extends Storable> T createAndSaveStorable(Class<T> storeableType, DynamicObject args) {
+        Long key = SurrogateKeyManager.getInstance().nextKey(storeableType);
+        try {
+            T storable = storeableType.getConstructor(long.class).newInstance(key);
+            JsonParser parser = new JsonParser();
+            parser.initializeInstance(storable, args);
+            persistStorable(storable);
+            return storable;
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException | SecurityException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create storable", e);
+        }
     }
 
-    public Map<String, String> createStore(Map<String, String> params) {
-        Store store = new Store(SurrogateKeyManager.getInstance()
-            .nextKey(SurrogateKeyManager.STORE_SURROGATE_KEY));
-        store.initialize(params);
-        persistStorable(StorerFactory.getStoreStorer(), store);
-        return returnBoolean(params, true);
+    public <T extends Storable> DynamicObject respondToCreateAndSaveStorable(DynamicObject args, Class<T> storableClass) {
+        return args.put(ERROR_IND, null == createAndSaveStorable(storableClass, args));
     }
 
-    public Map<String, String> getAllStore(Map<String, String> params) {
-        Storer<Store> storeStorer = StorerFactory.getStoreStorer();
+    public DynamicObject getAllStore(DynamicObject args) {
+        Storer<Store> storeStorer = FlatFileStorerFactory.getStorer(Store.class);
         List<Store> stores;
         try {
             stores = storeStorer.loadAllId(storeStorer.getIds());
         } catch (IOException e) {
             throw new RuntimeException("Failed to load created stores", e);
         }
-        return returnString(params, TransmissionHelper.toTransmissionString(stores));
+        DynamicObject storesArray = new DynamicObject(DynamicType.ARRAY, stores);
+        return args.put(VALUE, storesArray);
     }
 
-    private Map<String, String> returnDouble(Map<String, String> args, double value) {
-        args.put(RETURN_VALUE, String.valueOf(value));
-        return args;
+    private DynamicObject returnNoSuchCommand(DynamicObject args) {
+        return setError(args, "Unknown command: '" + args.get(COMMAND) + "'");
     }
 
-    private Map<String, String> returnString(Map<String, String> args, String value) {
-        args.put(RETURN_VALUE, value);
-        return args;
-    }
-
-    private Map<String, String> returnInt(Map<String, String> args, int value) {
-        args.put(RETURN_VALUE, String.valueOf(value));
-        return args;
-    }
-
-    private Map<String, String> returnLong(Map<String, String> args, long value) {
-        args.put(RETURN_VALUE, String.valueOf(value));
-        return args;
-    }
-
-    private Map<String, String> returnBoolean(Map<String, String> args, boolean value) {
-        args.put(RETURN_VALUE, String.valueOf(value));
-        return args;
-    }
-
-    private Map<String, String> returnNoSuchCommand(String command, Map<String, String> params) {
-        return returnError(params, "Unknown command: '" + command + "'");
-    }
-
-    private Map<String, String> returnError(Map<String, String> args, String message) {
-        args.put(ERROR_IND, String.valueOf(true));
+    private DynamicObject setError(DynamicObject args, String message) {
+        args.put(ERROR_IND, true);
         args.put(ERROR_MESSAGE, message);
         return args;
     }

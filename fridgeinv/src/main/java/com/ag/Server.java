@@ -3,11 +3,18 @@ package com.ag;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 
+import com.ag.json.JsonConfig;
+import com.ag.json.JsonFormatter;
+import com.ag.json.JsonParser;
+
 import java.io.IOException;
-import java.util.Map;
 
 @ServerEndpoint(value = "/Server")
 public class Server {
+
+    public static final String CONFIGURATION_PATH = "/configs.json";
+    public static final JsonConfig config = new JsonConfig(CONFIGURATION_PATH);
+    public static final String ROOT_DIRECTORY = (String) config.get("rootDirectory");
 
     private static final String KEY_REQUEST_SEQUENCE = "request_seq";
     private static final String COMMAND_RESPONSE = "response";
@@ -22,36 +29,34 @@ public class Server {
     }
 
     @OnMessage
-    public String onMessage(Session session, String messageData) throws IOException {
-        System.out.println("Received message: " + session + " :: " + messageData);
-        Message received = Message.parseMessage(messageData);
-        System.out.println(received);
+    public String onMessage(Session session, String jsonData) throws IOException {
+        JsonParser parser = new JsonParser();
+        DynamicObject request = parser.parse(jsonData);
+        System.out.println("Received message: " + session + " :: " + request.toString());
 
         ServerCommandHandler commandHandler = ServerCommandHandler.getInstance();
 
-        Map<String, String> responseArgs = commandHandler.handleCommand(received.getCommand(), received.getParameters());
-        Message response = createResponseMessage(received, responseArgs);
+        DynamicObject response = commandHandler.handleRequest(request);
 
-        if (Boolean.valueOf(responseArgs.get(ServerCommandHandler.ERROR_IND)) 
-                && commandHandler.isBroadcasted(received.getCommand())) {
-
-            Message broadcastMessage = new Message(received.getCommand(), response.getParameters());
-            broadcast(session, broadcastMessage);
+        if ((Boolean) response.get(ServerCommandHandler.ERROR_IND) 
+                && commandHandler.isBroadcasted(request)) {
+            broadcast(session, response);
         }
             
-        return response.toSerializedString();
+        writeRequestFields(response);
+        JsonFormatter formatter = new JsonFormatter(true);
+        return formatter.format(response);
     }
 
-    private Message createResponseMessage(Message received, Map<String, String> args) {
-        String requestSeq = received.getParameters().get(KEY_REQUEST_SEQUENCE);
+    private void writeRequestFields(DynamicObject args) {
+        Long requestSeq = (Long) args.get(KEY_REQUEST_SEQUENCE);
         if (null == requestSeq) {
             args.put(ServerCommandHandler.ERROR_MESSAGE, args.getOrDefault(ServerCommandHandler.ERROR_MESSAGE, 
                     "") + "; ERROR: No request sequence");
-            args.put(ServerCommandHandler.ERROR_IND, String.valueOf(true));
+            args.put(ServerCommandHandler.ERROR_IND, true);
         }
-        Message message = new Message(COMMAND_RESPONSE, args);
-        message.getParameters().put(KEY_REQUEST_SEQUENCE, requestSeq);
-        return message;
+        args.put(ServerCommandHandler.COMMAND, COMMAND_RESPONSE);
+        args.put(KEY_REQUEST_SEQUENCE, requestSeq);
     }
 
     @OnClose
@@ -65,10 +70,12 @@ public class Server {
         throwable.printStackTrace();
     }
 
-    public void broadcast(Session origin, Message message) {
+    public void broadcast(Session origin, DynamicObject args) {
+        JsonFormatter formatter = new JsonFormatter(true);
+        String seralizedString = formatter.format(args);
         for (Session session : origin.getOpenSessions()) {
             if (origin.isOpen() && !origin.equals(session)) {
-                session.getAsyncRemote().sendText(message.toSerializedString());
+                session.getAsyncRemote().sendText(seralizedString);
             }
         }
     }

@@ -1,0 +1,16 @@
+{
+    "rootDirectory": "C:/Program Files/Apache Software Foundation/Tomcat 9.0/.fridgeinv/",
+    "FlatFileStorer": {
+        "metaIdentifier": "meta_",
+        "directory": "storage/storer/"
+    },
+    "FlatFileStorer.Store": {
+        "name": "store"
+    },
+    "FlatFileStorer.InventoryItem": {
+        "name": "inv_item"
+    },
+    "SurrogateKeyManager": {
+        "path": "keys"
+    }
+}

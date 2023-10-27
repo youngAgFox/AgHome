@@ -1,107 +1,84 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
-import com.ag.database.InvalidParameterException;
+import com.ag.DynamicObject;
+import com.ag.DynamicType;
+import com.ag.ServerCommandHandler;
 import com.ag.database.InventoryItem;
-import com.ag.database.ParameterHelper;
-import com.ag.database.ParameterHelper.Convertor;
+import com.ag.json.AutoInit;
+import com.ag.json.JsonParser;
+
+import util.DateUtils;
 
 public class ParameterHelperTest {
     
-    @ParameterizedTest @CsvSource(value = {
-        "[,]::",
-        "[Hey,Testing \"Quoted\"]:Hey:Testing \"Quoted\"",
-        "[\"Quoted, field, yeah\",\"\"]:Quoted, field, yeah:"
-    }, delimiter = ':' )
-    public void testListConvertorValidStrings(String source, String exp1, String exp2) {
-        if (null == exp1) {
-            exp1 = "";
-        }
-        if (null == exp2) {
-            exp2 = "";
-        }
-        Convertor<String, List<String>> testConvertor = ParameterHelper.getListConvertor(ParameterHelper.getStringConvertor());
-        List<String> results = testConvertor.convert(source);
-        assertEquals(2, results.size(), "Results: " + results.toString());
-        assertEquals(exp1, results.get(0));
-        assertEquals(exp2, results.get(1));
-    }
-
-    @ParameterizedTest @ValueSource(strings = {
-        "\"Testing unmatched", "Testing,\"Unmatched quote"
-    })
-    public void testListConvertorInvalidStrings(String source) {
-        Convertor<String, List<String>> testConvertor = ParameterHelper.getListConvertor(ParameterHelper.getStringConvertor());
-        assertThrows(RuntimeException.class, () -> testConvertor.convert(source));
-    }
-
-    @ParameterizedTest @ValueSource(strings = {
-        "[0,1,2,3]", "[-1032,23421,23,21]", "[235233,23,-23423,0]", "[\"2323\",'-1234',\"57\",'23']" 
-    })
-    public void testIntListConvertor(String source) {
-        Convertor<String, List<Integer>> convertor = ParameterHelper.getListConvertor(ParameterHelper.getIntConvertor());
-        List<Integer> ints = convertor.convert(source);
-        assertEquals(4, ints.size());
+    @Test
+    public void testJsonParser() {
+        JsonParser parser = new JsonParser();
+        DynamicObject arr = parser.parse("[0,1,2,34,-23,2]");
+        DynamicObject obj = parser.parse("{\"test\":34234, \"test2\" : null,\"last\":\"last,:test\",\"quoted\":\"\\\"Hi there chief\\\"\"}");
+        System.out.println(arr);
+        System.out.println(obj);
     }
 
     @Test
-    public void testCreateParameterMap() {
-        double d = 0.75;
-        boolean b = true;
-        int i = 2323;
-        String s = "Testing a string, here";
-        Boolean nb = null;
-        Map<String, String> testMap = new HashMap<>();
-        testMap.put("i", String.valueOf(i));
-        testMap.put("b", String.valueOf(b));
-        testMap.put("nb", String.valueOf(nb));
-
-        List<Integer> testList = new ArrayList<>();
-        testList.add(-23);
-        testList.add(2323);
-        testList.add(1009823);
-
-        Boolean[] testArray = {true, true, false, false, true, false, null};
-
-        Map<String, String> results = ParameterHelper.createStringValueMap(
-            "d", d,
-            "b", b,
-            "i", i,
-            "s", s,
-            "nb", nb,
-            "testMap", testMap,
-            "testList", testList,
-            "testArray", testArray
-        );
-        System.out.println(results);
+    public void testJsonParserError() {
+        JsonParser parser = new JsonParser();
+        // JsonEntity error2 = parser.parse("[0},\n3,2]");
+        DynamicObject obj = parser.parse("{\"quoted\":\n\"\\\"a\\\"}");
     }
 
     @Test
-    public void testToArgs() {
-        Map<String, String> params = ParameterHelper.createStringValueMap(
-            "name", null,
-            "quantity", 3,
-            "date", Calendar.getInstance().getTime()
-        );
-        InventoryItem item = new InventoryItem();
-        assertThrows(InvalidParameterException.class, () -> item.initialize(params));
-        params.put("name", "testName");
+    public void testGenericPersistenceAndInit() {
+        DynamicObject invModel = new DynamicObject(DynamicType.OBJECT);
+        String dateString = "2023-01-01T23:59:59";
+        invModel.put("name", "TEST NAME");
+        invModel.put("lastAdded", dateString);
+        invModel.put("quantity", 23);
 
-        item.initialize(params);
+        InventoryItem item = ServerCommandHandler.getInstance().createAndSaveStorable(InventoryItem.class, invModel);
+        Date date = DateUtils.parseDate(dateString);
 
-        assertEquals("testName", item.getName());
-        assertEquals(3, item.getQuantity());
-        // System.out.println(item.getDate());
+        assertEquals("TEST NAME", item.getName());
+        assertEquals(date, item.getLastAdded());
+        assertEquals(23, item.getQuantity());
+    }
+
+    private class TestInit {
+        private int[] dice;
+        private boolean[] isRolling;
+        private Long[] ids;
+
+        private Map<String, Long> testMap;
+        private DynamicObject testSubInit;
+
+        private Collection<String> words;
+        private List<String> conversations;
+    }
+
+    @Test
+    public void testComplicatedInit() {
+        DynamicObject model = new DynamicObject(DynamicType.OBJECT);
+        DynamicObject dice = model.putArray("dice");
+        dice.add(3).add(6).add(9);
+        DynamicObject rolling = model.putArray("isRolling");
+        rolling.add(true).add(false).add(false);
+        DynamicObject ids = model.putArray("ids");
+        ids.add(7L).add(3).add(9L);
+
+        TestInit init = new TestInit();
+        JsonParser parser = new JsonParser();
+        try {
+            parser.initializeInstance(init, model);
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 }

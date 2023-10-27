@@ -1,3 +1,5 @@
 fridgeinv/.idea*
 *.class
-*/target**
+target*
+WEB-INF/classes/*
+.vscode

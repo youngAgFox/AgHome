@@ -1,3 +1,5 @@
+import * as Logger from "/log.js";
+
 const _wsUri = "ws://" + window.location.host + "/Server";
 const _is_date_field_regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
 let _socket = null;
@@ -20,7 +22,7 @@ export function connect(funcOnConnect, funcOnClose, funcOnError) {
     _socket.addEventListener("close", onClose);
     _socket.addEventListener("message", onMessage);
     _socket.addEventListener("error", onError);
-    console.log("Initialized db socket");
+    Logger.trace("Initialized db socket");
 }
 
 export function close() {
@@ -29,6 +31,7 @@ export function close() {
     }
     _socket.close();
     _socket = null;
+    Logger.trace("Manually closing socket");
 }
 
 export function requestStoreData(name, func, errorFunc) {
@@ -36,11 +39,11 @@ export function requestStoreData(name, func, errorFunc) {
 }
 
 export function requestStoreNames(func, errorFunc) {
-    sendRequest("get_all_store", func, errorFunc);
+    sendRequest("get_all_store", {}, func, errorFunc);
 }
 
 export function requestShelfNames(func, errorFunc) {
-    sendRequest("get_all_shelf", func, errorFunc);
+    sendRequest("get_all_shelf", {}, func, errorFunc);
 }
 
 export function requestShelfData(name, func, errorFunc) {
@@ -59,49 +62,49 @@ export function requestDeleteItem(invItem, func, errorFunc) {
 
 }
 
-function sendRequest(data, params = {}, func = logUnhandledFunction, errorFunc = logUnhandledFunction) {
+function sendRequest(command, args = {}, func = logUnhandledFunction, errorFunc = logUnhandledFunction) {
+    Logger.debug("Args:", command, args, func, errorFunc);
     _requests.push({request_seq: _request_seq, func, errorFunc});
-    let paramsStr = `request_seq=${_request_seq++}`;
-    for (const [key, value] of Object.entries(params)) {
-        if (value instanceof Date) {
-            paramsStr += `;${key}=${serializeDate(value)}`;
-        } else {
-            paramsStr += `;${key}=${value}`;
-        }
+    for (const [key, value] of Object.entries(args)) {
+        args[key] = serialize(value);
     }
-    const request = `${data}?${paramsStr}`;
-    console.log("Sending", request);
+    args['request_seq'] = _request_seq++;
+    args['command'] = command;
+    const request = JSON.stringify(args);
+    Logger.debug(args, " -> ", request);
     _socket.send(request);
 }
 
 function logUnhandledFunction(e) {
-    console.log("WARNING: unhandled response function called: " + JSON.stringify(e));
+    console.warn("Unhandled response function called: ", JSON.stringify(e));
 }
 
 function onOpen(event) {
-    console.log("Opened connection: " + JSON.stringify(event));
     _isConnected = true;
     _onConnect(event);
+    Logger.info("Opened connection: ", JSON.stringify(event));
 }
 
 function onClose(event) {
-    console.log("Closed connection: " + JSON.stringify(event));
     _isConnected = false;
     _onClose(event);
+    Logger.warn("Closed connection: ", JSON.stringify(event));
 }
 
 // message {command, parameters}
 function onMessage(event) {
-    const message = readMessage(event.data);
-    console.log(`Received message: '${message.command}' :: ${JSON.stringify(message.parameters)}`);
-    // toString() is necessary here since switch statments use strict comparison
-    switch (message.command.toString()) {
+    const rawMessage = JSON.parse(event);
+    Logger.debug(`Message received: ${rawMessage}`);
+    const message = deserializeParameters(rawMessage);
+    Logger.debug(`Deserialized message: ${rawMessage}`);
+
+    switch (message.command) {
         case "response":
             if(message.parameters.request_seq !== undefined) {
                 const ongoingRequests = [];
                 for (const request of _requests) {
-                    if (request.request_seq.toString() === message.parameters.request_seq.toString()) {
-                        if (message.parameters.error_ind.toString() === "false") {
+                    if (request.request_seq === message.parameters.request_seq) {
+                        if (message.parameters.error_ind === "false") {
                             request.func(deserializeParameters(message.parameters));
                         } else {
                             request.errorFunc(deserializeParameters(message.parameters));
@@ -112,16 +115,16 @@ function onMessage(event) {
                 }
                 _requests = ongoingRequests;
             } else {
-                console.log(`WARNING: recieved '${message.command}' with undefined 'request_seq': ${deserializeParameters(message.parameters)}`);
+                Logger.warn(`Recieved '${message.command}' with undefined 'request_seq': ${deserializeParameters(message.parameters)}`);
             }
             break;
         case "create_store":
         case "create_inv_item":
         case "delete_store":
         case "delete_inv_item":
-            console.log("Recieved message with command: '" + message.command + "'");
+            Logger.info("Recieved message with command: '" + message.command + "'");
             break;
-        default: console.log("Unrecognized command: '" + message.command + "' :: " + JSON.stringify(message.parameters));
+        default: Logger.error("Unrecognized command: '" + message.command + "' :: " + JSON.stringify(message.parameters));
             break;
     }
 }
@@ -139,6 +142,13 @@ function isDateField(field) {
     return _is_date_field_regex.test(field);
 }
 
+function serialize(object) {
+    if (object instanceof Date) {
+        return serializeDate(object);
+    }
+    return  object.toString();
+}
+
 function serializeDate(date) {
     const year = `${date.getFullYear()}`.padStart(2, "0");
     const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -147,17 +157,6 @@ function serializeDate(date) {
     const minutes = `${date.getMinutes()}`.padStart(2, "0");
     const seconds = `${date.getSeconds()}`.padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-}
-
-function readMessage(rawMessage) {
-    const command = rawMessage.split("?", 1);
-    const paramPairs = rawMessage.substr(rawMessage.indexOf("?") + 1).split(";");
-    const parameters = paramPairs .reduce((prev, value) => {
-        const parts = value.split("=");
-        prev[parts[0]] = parts[1];
-        return prev;
-    }, {/* Pass new object as initial arg */});
-    return {command, parameters};
 }
 
 function onError(event) {

@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class CollectionUtil {
+public class CollectionUtils {
 
     public static <T> Collection<T> select(Collection<T> list, Predicate<T> select) {
         return list.stream()

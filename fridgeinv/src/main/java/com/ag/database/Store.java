@@ -1,16 +1,12 @@
 package com.ag.database;
 
-import java.util.Map;
+import com.ag.DynamicObject;
+import com.ag.json.AutoInitAll;
 
+@AutoInitAll
 public class Store extends Storable {
 
-    private enum Property {
-        NAME;
-
-        public String getKey() {
-            return EnumHelper.toPropertyString(this);
-        }
-    }
+    private String name;
 
     public Store() {}
 
@@ -19,22 +15,11 @@ public class Store extends Storable {
     }
 
     public String getName() {
-        return getString(Property.NAME.getKey());
+        return name;
     }
 
     public void setName(String name) {
-        set(Property.NAME.getKey(), name);
+        this.name = name;
     }
 
-    @Override
-    public void initialize(Map<String, String> params) {
-        ParameterHelper.validateParametersAreNotNull(params, Property.NAME.getKey());
-
-        setString(params, Property.NAME.getKey());
-
-        Storer<Store> storeStorer = StorerFactory.getStoreStorer();
-        final String storeName = getName();
-        ParameterHelper.validateUniqueParameter("Store name '" + storeName + "' already exists (check is case insensitive).", 
-            storeStorer, store -> store.getName().equalsIgnoreCase(storeName));
-    }
 }

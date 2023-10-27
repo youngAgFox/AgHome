@@ -1,4 +1,5 @@
 import * as Database from "/db.js";
+import * as Logger from "/log.js";
 // TODO add different menus / groups
 
 const itemInputs = [];
@@ -20,6 +21,7 @@ const connectedImage = document.getElementById("connected-img");
 Database.connect(initializeFromDatabase, databaseClosed, databaseError);
 
 function initializeFromDatabase() {
+    Logger.trace("Initializing from database");
     connectingImage.classList.toggle("hidden", true);
     connectedImage.classList.toggle("hidden", false);
     connectionStatusLabel.classList.toggle("closed", false);
