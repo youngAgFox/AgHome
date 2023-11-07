@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface AutoInit {
+public @interface JsonField {
     // can specify the field name to look for. When empty string, uses field name as key.
     public String getFieldName() default "";
 }

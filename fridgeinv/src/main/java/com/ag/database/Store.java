@@ -1,9 +1,8 @@
 package com.ag.database;
 
-import com.ag.DynamicObject;
-import com.ag.json.AutoInitAll;
+import com.ag.json.JsonClass;
 
-@AutoInitAll
+@JsonClass
 public class Store extends Storable {
 
     private String name;
@@ -22,4 +21,8 @@ public class Store extends Storable {
         this.name = name;
     }
 
+    @Override
+    public String toString() {
+        return name + " (" + getId() + ")";
+    }
 }

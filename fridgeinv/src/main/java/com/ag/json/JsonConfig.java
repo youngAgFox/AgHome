@@ -47,7 +47,7 @@ public class JsonConfig {
     }
 
     private void addMissingFields(DynamicObject source, DynamicObject destination) {
-        for (Entry<String, DynamicObject> field : source.getProperties()) {
+        for (Entry<String, DynamicObject> field : source.getProperties().entrySet()) {
             if (!destination.containsKey(field.getKey())) {
                 destination.put(field.getKey(), field.getValue());
             }

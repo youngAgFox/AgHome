@@ -11,6 +11,7 @@ import java.util.Set;
 import com.ag.DynamicObject;
 import com.ag.DynamicType;
 import com.ag.database.FlatFileStorerFactory;
+import com.ag.database.InventoryItem;
 import com.ag.database.Storable;
 import com.ag.database.Store;
 import com.ag.database.Storer;
@@ -32,6 +33,7 @@ public class ServerCommandHandler {
     public static final String RETURN_VALUE = "value";
     public static final String ERROR_IND = "error_ind";
     public static final String ERROR_MESSAGE = "error_msg";
+    public static final String ID = "id";
 
     private static ServerCommandHandler instance;
 
@@ -40,9 +42,9 @@ public class ServerCommandHandler {
 
     private ServerCommandHandler() {
         // handlers setup
-        // commandHandlers.put(CREATE_INVENTORY_ITEM, args -> respondToCreateAndSaveStorable(args, InventoryItem.class));
-        // commandHandlers.put(CREATE_STORE, args -> respondToCreateAndSaveStorable(args, Store.class));
-        // commandHandlers.put(GET_ALL_STORE, args -> getAllStore(args));
+        commandHandlers.put(CREATE_INVENTORY_ITEM, args -> respondToCreateAndSaveStorable(args, InventoryItem.class));
+        commandHandlers.put(CREATE_STORE, args -> respondToCreateAndSaveStorable(args, Store.class));
+        commandHandlers.put(GET_ALL_STORE, args -> getAllStore(args));
 
         // broadcast commands setup
         broadcastCommands.add(CREATE_STORE);
@@ -104,7 +106,8 @@ public class ServerCommandHandler {
     }
 
     public <T extends Storable> DynamicObject respondToCreateAndSaveStorable(DynamicObject args, Class<T> storableClass) {
-        return args.put(ERROR_IND, null == createAndSaveStorable(storableClass, args));
+        Storable stored = createAndSaveStorable(storableClass, args);
+        return args.put(ERROR_IND, null == stored).put(ID, stored.getId());
     }
 
     public DynamicObject getAllStore(DynamicObject args) {

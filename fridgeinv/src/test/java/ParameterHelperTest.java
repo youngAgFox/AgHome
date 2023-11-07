@@ -3,6 +3,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -13,8 +14,11 @@ import org.junit.jupiter.api.Test;
 import com.ag.DynamicObject;
 import com.ag.DynamicType;
 import com.ag.Network.ServerCommandHandler;
+import com.ag.database.FlatFileStorerFactory;
 import com.ag.database.InventoryItem;
-import com.ag.json.AutoInitAll;
+import com.ag.database.Store;
+import com.ag.database.Storer;
+import com.ag.json.JsonClass;
 import com.ag.json.JsonFormatter;
 import com.ag.json.JsonParser;
 import com.ag.util.DateUtils;
@@ -95,7 +99,7 @@ public class ParameterHelperTest {
         assertEquals(23, item.getQuantity());
     }
 
-    @AutoInitAll
+    @JsonClass
     public static class TestInit {
         private int[] dice;
         private boolean[] isRolling;
@@ -202,6 +206,48 @@ public class ParameterHelperTest {
             "[1, 5, 63, -34, 32]");
             
         assertArrayEquals(expected, ints);
+    }
+
+    @Test
+    public void testStoreable() throws IOException {
+        Storer<Store> storeStorer = FlatFileStorerFactory.getStorer(Store.class);
+        List<Store> stores = storeStorer.loadAllId(storeStorer.getIds());
+        System.out.println(stores);
+    }
+
+    @Test
+    public void testFormatObject() {
+        DynamicObject model = new DynamicObject(DynamicType.OBJECT);
+        DynamicObject dice = model.putArray("dice");
+        dice.add(3).add(6).add(9);
+        DynamicObject rolling = model.putArray("isRolling");
+        rolling.add(true).add(false).add(false);
+        DynamicObject ids = model.putArray("ids");
+        ids.add(7L).add(3L).add(9L);
+
+        JsonFormatter formatter = new JsonFormatter();
+        System.out.println(formatter.format(model));
+        System.out.println(formatter.format(model.getProperties()));
+
+        JsonParser parser = new JsonParser();
+        TestInit init = null;
+        
+        try {
+            init = parser.initialize(TestInit.class, 
+                  "{ "
+                + " \"dice\": [3, 6, 9], "
+                + " \"isRolling\": [true, false, false], "
+                + " \"ids\": [7, 3, 9]"
+                + "} "
+            );
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        String format = formatter.format(init);
+        System.out.println("format: " + format);
+        DynamicObject testPostFormat = parser.parse(format);
+        System.out.println("post format: " + formatter.format(testPostFormat));
     }
 
 }

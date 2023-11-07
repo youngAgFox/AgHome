@@ -19,8 +19,19 @@ for (const [key, value] of Object.entries(log_levels)) {
 const _log_level = log_levels.debug;
 
 export function logLevel(log_level, ...args) {
-    if (log_level >= _log_level) {
+    if (log_level < _log_level) {
+        return;
+    }
+    if (log_level >= log_levels.error) {
+        console.error(levels[log_level], ...args);
+    } else if (log_level >= log_levels.warn) {
+        console.warn(levels[log_level], ...args);
+    } else if (log_level >= log_levels.info) {
         console.log(levels[log_level], ...args);
+    } else if (log_level >= log_levels.debug) {
+        console.debug(levels[log_level], ...args);
+    } else {
+        console.trace(levels[log_level], ...args);
     }
 }
 

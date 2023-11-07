@@ -7,8 +7,10 @@ const QUANTITY_MIN = 0;
 const QUANTITY_INIT = 1;
 const QUANTITY_MAX = 99;
 const NAME_MAXLENGTH = 50;
-let checkedOutStore = null;
 let checkbox_id_seq = 1;
+
+// store data
+let stores = {};
 
 
 const connectionStatusLabel = document.getElementById(
@@ -27,15 +29,19 @@ function initializeFromDatabase() {
     connectionStatusLabel.classList.toggle("closed", false);
     connectionStatusLabel.innerText = "Connected";
     setDisabledInputs(false);
-    Database.requestStoreNames(initStores);
+    Database.requestStoreNames(initStores, initStoresError);
 }
 
 function initStores(names) {
-    console.log("init stores: ", names);
+    Logger.info("init stores: ", names.value);
 }
 
-function databaseError() {
-    console.log("ERROR: (Database): " + error);
+function initStoresError(error) {
+    Logger.error("Failed to populate stores: " + error.error_msg);
+}
+
+function databaseError(error) {
+    Logger.error("(Database): ", error);
 }
 
 function databaseClosed() {
@@ -75,6 +81,48 @@ toggleFridgeBtn.addEventListener("click", () => toggleStoreStyle("fridge"));
 
 storeAddBtn.addEventListener("click", () => createNewStore(storeAddInput.value));
 
+storeSelect.addEventListener("change", loadStore);
+
+function createStoreIfNew(data, isFromUser = false) {
+    if (data.error_ind !== false) {
+        Logger.error("Failed to create store: ", data.error_msg);
+        return;
+    }
+    let storeItem;
+    if (stores[id] === undefined || stores[data.id] === null) {
+        Logger.info("Creating store:", data);
+        storeItem = document.createElement("option");
+        storeItem.value = data.id;
+        storeItem.innerText = data.name;
+        stores[data.id] = storeItem;
+    }
+    storeItem = stores[data.id];
+    if (isFromUser) {
+        storeItem.selected = true;
+    }
+    storeSelect.appendChild(storeItem);
+    loadStore();
+}
+
+function loadStore() {
+    const name = storeSelect.value;
+    Logger.info("Loading store:", name);
+}
+
+function createStoreData(data) {
+    Logger.info("Creating store data:", data);
+
+}
+
+function createInventoryItem(data) {
+    Logger.info("Creating inventory item:", data);
+    
+}
+
+Database.setHandler("create_store", (data) => createStoreIfNew(data, true));
+Database.setHandler("", createStoreData);
+Database.setHandler("create_inv_item", createInventoryItem);
+
 function setDisabledInputs(isDisabled) {
     inventoryAddBtn.disabled = isDisabled;
     inventoryFormSubmitBtn.disabled = isDisabled;
@@ -104,7 +152,7 @@ function createNewStore(storeName) {
         alert("The stores already contains a name that resolves to '" + storeName + "'")
         return;
     }
-    Database.requestCreateStore(storeName, addStoreItemDB, (errorMessage) => {
+    Database.requestCreateStore(storeName, createStoreIfNew, (errorMessage) => {
         console.log(`WARNING: Failed to create store '${storeName}': ${errorMessage}`);
     });
 }
@@ -236,10 +284,6 @@ function toggleItemToStore(invItem, addToStoreButton) {
     } else {
         addStoreItem(invItem);
     }
-}
-
-function addStoreItemDB(params) {
-
 }
 
 function addStoreItem(invItem) {

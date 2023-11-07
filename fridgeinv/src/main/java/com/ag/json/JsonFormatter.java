@@ -2,12 +2,14 @@ package com.ag.json;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -102,7 +104,7 @@ public class JsonFormatter {
             Object[] objArray = ArrayUtils.toObjectArray(obj);
             value = formatArray(objArray, indent);
         } else if (obj instanceof Collection) {
-            value = formatList((Collection<?>) obj, indent);
+            value = formatCollection((Collection<?>) obj, indent);
         } else if (obj instanceof Map) {
             value = formatMap((Map<?, ?>) obj, indent);
         } else if (obj instanceof Date) {
@@ -110,12 +112,32 @@ public class JsonFormatter {
             value = DateUtils.formatDate((Date) obj);
         }
 
-        // default to the objects toString()
+        // print off the objects properties
         if (null != obj && null == value) {
-            value = StringUtils.quote(obj.toString());
+            value = formatObjectFields(obj, indent);
         }
 
         return value;
+    }
+
+    private String formatObjectFields(Object obj, int indent) {
+        Field[] fields = obj.getClass().getDeclaredFields();
+        Map<String, Object> map = new HashMap<>(fields.length * 2);
+        for (Field field : fields) {
+            String fieldName = JsonHelper.getJsonFieldName(obj.getClass(), field);
+            if (null == fieldName) {
+                continue;
+            }
+            try {
+                field.setAccessible(true);
+                map.put(fieldName, field.get(obj));
+                field.setAccessible(false);
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to format object " + obj.toString()
+                        + "(" + obj.getClass().getName() + "): " + e.getMessage());
+            }
+        }
+        return formatMap(map, indent);
     }
 
     private Method getCustomFormatMethod(Object object) {
@@ -180,7 +202,7 @@ public class JsonFormatter {
         return sb.toString();
     }
 
-    private String formatList(Iterable<?> it, int indent) {
+    private String formatCollection(Iterable<?> it, int indent) {
         StringBuilder sb = new StringBuilder("[");
         for (Object ele : it) {
             sb.append(formatObject(ele, indent))

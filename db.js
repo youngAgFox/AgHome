@@ -6,6 +6,7 @@ let _socket = null;
 let _isConnected = false;
 let _request_seq = 0;
 let _requests = [];
+let _handlers = {};
 let _onConnect;
 let _onClose;
 let _onError;
@@ -32,6 +33,10 @@ export function close() {
     _socket.close();
     _socket = null;
     Logger.trace("Manually closing socket");
+}
+
+export function setHandler(key, func) {
+    _handlers[key] = func;
 }
 
 export function requestStoreData(name, func, errorFunc) {
@@ -93,21 +98,27 @@ function onClose(event) {
 
 // message {command, parameters}
 function onMessage(event) {
-    const rawMessage = JSON.parse(event);
-    Logger.debug(`Message received: ${rawMessage}`);
+    let rawMessage;
+    try {
+        rawMessage = JSON.parse(event.data);
+    } catch (error) {
+        Logger.error("Error parsing event.data json", event);
+        return;
+    }
+    Logger.debug(`Message received:`, rawMessage);
     const message = deserializeParameters(rawMessage);
-    Logger.debug(`Deserialized message: ${rawMessage}`);
+    Logger.debug(`Message deserialized:`, rawMessage);
 
     switch (message.command) {
         case "response":
-            if(message.parameters.request_seq !== undefined) {
+            if(message.request_seq !== undefined) {
                 const ongoingRequests = [];
                 for (const request of _requests) {
-                    if (request.request_seq === message.parameters.request_seq) {
-                        if (message.parameters.error_ind === "false") {
-                            request.func(deserializeParameters(message.parameters));
+                    if (request.request_seq === message.request_seq) {
+                        if (message.error_ind === false) {
+                            request.func(deserializeParameters(message));
                         } else {
-                            request.errorFunc(deserializeParameters(message.parameters));
+                            request.errorFunc(deserializeParameters(message));
                         }
                     } else {
                         ongoingRequests.push(request);
@@ -115,16 +126,16 @@ function onMessage(event) {
                 }
                 _requests = ongoingRequests;
             } else {
-                Logger.warn(`Recieved '${message.command}' with undefined 'request_seq': ${deserializeParameters(message.parameters)}`);
+                Logger.error(`Received '${message.command}' with undefined 'request_seq': ${deserializeParameters(message)}`);
             }
             break;
-        case "create_store":
-        case "create_inv_item":
-        case "delete_store":
-        case "delete_inv_item":
-            Logger.info("Recieved message with command: '" + message.command + "'");
-            break;
-        default: Logger.error("Unrecognized command: '" + message.command + "' :: " + JSON.stringify(message.parameters));
+        default: 
+            if (message.command !== undefined && message.command !== null
+                && _handlers[message.command] !== undefined && _handlers[message.command] !== null) {
+                    _handlers[message.command](message);
+            } else {
+                Logger.error(`Received unregistered command '${message.command}'`, message);
+            }
             break;
     }
 }

@@ -2,10 +2,9 @@ package com.ag.database;
 
 import java.util.Date;
 
-import com.ag.DynamicObject;
-import com.ag.json.AutoInitAll;
+import com.ag.json.JsonClass;
 
-@AutoInitAll
+@JsonClass
 public class InventoryItem extends Storable {
 
     private String name;

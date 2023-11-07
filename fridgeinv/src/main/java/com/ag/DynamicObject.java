@@ -1,11 +1,11 @@
 package com.ag;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.ag.json.JsonFormat;
 import com.ag.json.JsonFormatter;
@@ -47,9 +47,65 @@ public class DynamicObject implements Iterable<DynamicObject> {
         return value;
     }
 
+    public Integer getAsInteger() {
+        return ObjectUtils.toWrapperType(Integer.class, get());
+    }
+
+    public String getAsString() {
+        return ObjectUtils.toWrapperType(String.class, get());
+    }
+
+    public Boolean getAsBoolean() {
+        return ObjectUtils.toWrapperType(Boolean.class, get());
+    }
+
+    public Long getAsLong() {
+        return ObjectUtils.toWrapperType(Long.class, get());
+    }
+
+    public Short getAsShort() {
+        return ObjectUtils.toWrapperType(Short.class, get());
+    }
+
+    public Double getAsDouble() {
+        return ObjectUtils.toWrapperType(Double.class, get());
+    }
+
+    public Float getAsFloat() {
+        return ObjectUtils.toWrapperType(Float.class, get());
+    }
+
     public Object get(int index) {
         DynamicObject entity = getDynamicObject(index);
         return getValue(entity);
+    }
+
+    public Integer getAsInteger(int index) {
+        return ObjectUtils.toWrapperType(Integer.class, get(index));
+    }
+
+    public String getAsString(int index) {
+        return ObjectUtils.toWrapperType(String.class, get(index));
+    }
+
+    public Boolean getAsBoolean(int index) {
+        return ObjectUtils.toWrapperType(Boolean.class, get(index));
+    }
+
+    public Long getAsLong(int index) {
+        return ObjectUtils.toWrapperType(Long.class, get(index));
+    }
+
+    public Short getAsShort(int index) {
+        return ObjectUtils.toWrapperType(Short.class, get(index));
+    }
+
+    public Double getAsDouble(int index) {
+        return ObjectUtils.toWrapperType(Double.class, get(index));
+    }
+
+    public Float getAsFloat(int index) {
+        return ObjectUtils.toWrapperType(Float.class, get(index));
     }
 
     public Object get(String key) {
@@ -57,12 +113,88 @@ public class DynamicObject implements Iterable<DynamicObject> {
         return getValue(entity);
     }
 
+    public Integer getAsInteger(String key) {
+        return ObjectUtils.toWrapperType(Integer.class, get(key));
+    }
+
+    public String getAsString(String key) {
+        return ObjectUtils.toWrapperType(String.class, get(key));
+    }
+
+    public Boolean getAsBoolean(String key) {
+        return ObjectUtils.toWrapperType(Boolean.class, get(key));
+    }
+
+    public Long getAsLong(String key) {
+        return ObjectUtils.toWrapperType(Long.class, get(key));
+    }
+
+    public Short getAsShort(String key) {
+        return ObjectUtils.toWrapperType(Short.class, get(key));
+    }
+
+    public Double getAsDouble(String key) {
+        return ObjectUtils.toWrapperType(Double.class, get(key));
+    }
+
+    public Float getAsFloat(String key) {
+        return ObjectUtils.toWrapperType(Float.class, get(key));
+    }
+
     public Object getOrDefault(String key, Object value) {
         if (null == properties || !properties.containsKey(key)) {
             return value;
         }
-        DynamicObject entity = getDynamicObject(key);
-        return ObjectUtils.getNonNull(getValue(entity), value);
+        return ObjectUtils.getFirstNonNull(get(key), value);
+    }
+
+    public Integer getAsIntegerOrDefault(String key, Integer value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (Integer) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Integer.class, get(key)), value);
+    }
+
+    public String getAsStringOrDefault(String key, String value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (String) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(String.class, get(key)), value);
+    }
+
+    public Boolean getAsBooleanOrDefault(String key, Boolean value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (Boolean) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Boolean.class, get(key)), value);
+    }
+
+    public Long getAsLongOrDefault(String key, Long value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (Long) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Long.class, get(key)), value);
+    }
+
+    public Short getAsShortOrDefault(String key, Short value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (Short) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Short.class, get(key)), value);
+    }
+
+    public Double getAsDoubleOrDefault(String key, Double value) {
+        if (null == properties || !properties.containsKey(key)) {
+            return value;
+        }
+        return (Double) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Double.class, get(key)), value);
+    }
+
+    public Float getAsFloatOrDefault(String key, Float value) {
+        if (null == properties || !containsKey(key)) {
+            return value;
+        }
+        return (Float) ObjectUtils.getFirstNonNull(ObjectUtils.toWrapperType(Float.class, get(key)), value);
     }
 
     public DynamicObject set(Object value) {
@@ -198,9 +330,9 @@ public class DynamicObject implements Iterable<DynamicObject> {
         }
     }
 
-    public Set<Map.Entry<String, DynamicObject>> getProperties() {
+    public Map<String, DynamicObject> getProperties() {
         validateType(DynamicType.OBJECT);
-        return properties.entrySet();
+        return Collections.unmodifiableMap(properties);
     }
 
     @JsonFormat

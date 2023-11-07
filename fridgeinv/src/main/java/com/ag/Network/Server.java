@@ -39,7 +39,7 @@ public class Server {
 
         DynamicObject response = commandHandler.handleRequest(request);
 
-        if ((Boolean) response.get(ServerCommandHandler.ERROR_IND) 
+        if (response.getAsBoolean(ServerCommandHandler.ERROR_IND) 
                 && commandHandler.isBroadcasted(request)) {
             broadcast(session, response);
         }
