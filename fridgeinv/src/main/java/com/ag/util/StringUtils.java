@@ -1,4 +1,4 @@
-package util;
+package com.ag.util;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -192,8 +192,16 @@ public class StringUtils {
         return null == string || string.isEmpty();
     }
 
-    public boolean isBlankOrNull(String string) {
+    public static boolean isBlankOrNull(String string) {
         return null == string || string.isBlank();
+    }
+
+    public static String quote(String s) {
+        return wrapWith(s, '"');
+    }
+
+    public static String wrapWith(String s, char c) {
+        return c + s + c;
     }
 
 }

@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import util.ObjectUtils;
+import com.ag.json.JsonFormat;
+import com.ag.json.JsonFormatter;
+import com.ag.util.ObjectUtils;
 
 /**
  * Represents an object that can be considered either a value, array, or object.
@@ -199,6 +201,20 @@ public class DynamicObject implements Iterable<DynamicObject> {
     public Set<Map.Entry<String, DynamicObject>> getProperties() {
         validateType(DynamicType.OBJECT);
         return properties.entrySet();
+    }
+
+    @JsonFormat
+    private String format(JsonFormatter formatter, int indent) {
+        switch (type) {
+            case ARRAY:
+                return formatter.formatObject(elements, indent);
+            case OBJECT:
+                return formatter.formatObject(properties, indent);
+            case VALUE:
+                return formatter.formatObject(value, indent);
+            default:
+                throw new RuntimeException("No format configuration for DO '" + type + "' type");
+        }
     }
 
     @Override

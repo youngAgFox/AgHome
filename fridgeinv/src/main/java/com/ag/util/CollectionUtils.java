@@ -1,4 +1,4 @@
-package util;
+package com.ag.util;
 
 import java.util.Collection;
 import java.util.function.Predicate;

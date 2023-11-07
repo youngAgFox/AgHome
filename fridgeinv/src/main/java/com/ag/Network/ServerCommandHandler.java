@@ -1,4 +1,4 @@
-package com.ag;
+package com.ag.Network;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -8,12 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.ag.database.InventoryItem;
+import com.ag.DynamicObject;
+import com.ag.DynamicType;
+import com.ag.database.FlatFileStorerFactory;
 import com.ag.database.Storable;
 import com.ag.database.Store;
 import com.ag.database.Storer;
+import com.ag.database.SurrogateKeyManager;
 import com.ag.json.JsonParser;
-import com.ag.database.FlatFileStorerFactory;
 
 public class ServerCommandHandler {
 
@@ -38,9 +40,9 @@ public class ServerCommandHandler {
 
     private ServerCommandHandler() {
         // handlers setup
-        commandHandlers.put(CREATE_INVENTORY_ITEM, args -> respondToCreateAndSaveStorable(args, InventoryItem.class));
-        commandHandlers.put(CREATE_STORE, args -> respondToCreateAndSaveStorable(args, Store.class));
-        commandHandlers.put(GET_ALL_STORE, args -> getAllStore(args));
+        // commandHandlers.put(CREATE_INVENTORY_ITEM, args -> respondToCreateAndSaveStorable(args, InventoryItem.class));
+        // commandHandlers.put(CREATE_STORE, args -> respondToCreateAndSaveStorable(args, Store.class));
+        // commandHandlers.put(GET_ALL_STORE, args -> getAllStore(args));
 
         // broadcast commands setup
         broadcastCommands.add(CREATE_STORE);

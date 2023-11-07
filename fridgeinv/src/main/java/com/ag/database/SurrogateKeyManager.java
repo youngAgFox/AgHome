@@ -1,4 +1,4 @@
-package com.ag;
+package com.ag.database;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,6 +8,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.ag.Network.Server;
 
 public class SurrogateKeyManager {
 

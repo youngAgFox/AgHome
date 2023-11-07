@@ -1,8 +1,9 @@
-package com.ag;
+package com.ag.Network;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 
+import com.ag.DynamicObject;
 import com.ag.json.JsonConfig;
 import com.ag.json.JsonFormatter;
 import com.ag.json.JsonParser;

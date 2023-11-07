@@ -18,11 +18,9 @@ import java.util.Map;
 
 import com.ag.DynamicObject;
 import com.ag.DynamicType;
-import com.ag.InvalidDynamicTypeOperationException;
-
-import util.ArrayUtils;
-import util.DateUtils;
-import util.StringUtils;
+import com.ag.util.ArrayUtils;
+import com.ag.util.DateUtils;
+import com.ag.util.StringUtils;
 
 /**
  * Handles creating and initializing models of Json using the DynamicObject class or custom user instances.
@@ -45,29 +43,38 @@ public class JsonParser {
         return convertors;
     }
 
-    public void initialize(Class<?> cls, String jsonString) {
+    public <T> T initialize(Class<T> cls, String jsonString) {
         if (null == jsonString) {
             throw new NullPointerException("jsonString must be non-null");
         }
         JsonTokenReader reader = new JsonTokenReader(new StringReader(jsonString));
-        initialize(cls, reader);
+        return initialize(cls, reader);
     }
 
-    public void initialize(Class<?> cls, InputStream inputStream) {
+    public <T> T initialize(Class<T> cls, InputStream inputStream) {
         if (null == inputStream) {
             throw new NullPointerException("inputStream must be non-null and support mark()");
         }
         JsonTokenReader reader = new JsonTokenReader(new BufferedReader(new InputStreamReader(inputStream)));
-        initialize(cls, reader);
+        return initialize(cls, reader);
     }
 
-    private void initialize(Class<?> cls, JsonTokenReader reader) {
+    // FIXME document that private classes must be static
+    private <T> T initialize(Class<T> cls, JsonTokenReader reader) {
         try {
-            Object object = cls.getConstructor().newInstance();
-            initializeInstance(object, parseJson(reader));
+            Object object = null;
+            DynamicObject model = parseJson(reader);
+            if (!cls.isArray()) {
+                object = cls.getConstructor().newInstance();
+                initializeInstance(object, model);
+            } else {
+                object = createArrayOrList(cls, model);
+            }
+            return cls.cast(object);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             e.printStackTrace();
+            throw new JsonParseException(e.getMessage());
         }
     }
 
@@ -92,16 +99,16 @@ public class JsonParser {
             throws IllegalArgumentException, IllegalAccessException, InstantiationException, 
                 InvocationTargetException, NoSuchMethodException, SecurityException {
 
-        if (DynamicType.OBJECT == model.getType()) {
-            initializeObject(object, model);
-        } else {
-            throw new InvalidDynamicTypeOperationException("Cannot initialize from invalid root model (root is not array or object json type)");
-        }
+        initializeObject(object, model);
     }
 
     private void initializeObject(Object object, DynamicObject model) 
             throws IllegalArgumentException, IllegalAccessException, InstantiationException, 
                 InvocationTargetException, NoSuchMethodException, SecurityException {
+
+        if (!DynamicType.OBJECT.equals(model.getType())) {
+            throw new JsonParseException("Unexpected model type for initializing object: " + model.getType());
+        }
 
         Field[] fields = object.getClass().getDeclaredFields();
         boolean onlyInitAnnotatedFields = null == ArrayUtils.find(object.getClass().getAnnotations(), 
@@ -120,26 +127,7 @@ public class JsonParser {
             if (model.containsKey(name)) {
                 DynamicObject fieldEntity = model.getDynamicObject(name);
                 if (DynamicType.ARRAY == fieldEntity.getType()) {
-                    if (field.getType().isArray()) {
-                        int len = fieldEntity.size();
-                        Object arr = Array.newInstance(field.getType(), len);
-                        for (int i = 0; i < len; i++) {
-                            if (field.getType().getComponentType().isPrimitive()) {
-                                setPrimitiveArray(field, object, i, fieldEntity.get(i));
-                            } else {
-                                Array.set(arr, i, fieldEntity.get(i));
-                            }
-                        }
-                        field.set(object, arr);
-                    } if (field.getType().isAssignableFrom(Collection.class)) {
-                        List<Object> arrList = new ArrayList<>();
-                        for (DynamicObject dynamicObject : fieldEntity) {
-                            arrList.add(dynamicObject.get());
-                        }
-                        field.set(fieldEntity, arrList);
-                    } else {
-                        throw new JsonInitializeException("Cannot initialize array with provided fields and types (" + field.getType().getTypeName() + ")");
-                    }
+                    field.set(object, createArrayOrList(field.getType(), fieldEntity));
                 } else if (DynamicType.OBJECT == fieldEntity.getType()) {
                     Object fieldObject = field.getClass().getConstructor().newInstance();
                     initializeInstance(fieldObject, fieldEntity);
@@ -165,19 +153,58 @@ public class JsonParser {
         }
     }
 
+    private Object createArrayOrList(Class<?> arrayClass, DynamicObject arrayModel) {
+
+        if (arrayClass.isArray()) {
+            int len = arrayModel.size();
+            Class<?> componentType = arrayClass.getComponentType();
+            Object arr = Array.newInstance(componentType, len);
+            for (int i = 0; i < len; i++) {
+                try {
+                    if (componentType.isPrimitive()) {
+                        setPrimitiveArray(componentType, arr, i, arrayModel.get(i));
+                    } else {
+                        System.out.println(arrayModel.get(i).getClass().getName());
+                        Array.set(arr, i, arrayModel.get(i));
+                    }
+
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException(
+                            "Failed to set index (" + i + ") to type " + arrayModel.get(i).getClass().getName()
+                                    + " in " + componentType.getName() + " array",
+                            e);
+                }
+            }
+            return arr;
+        } else if (arrayClass.isAssignableFrom(Collection.class)) {
+            List<Object> arrList = new ArrayList<>();
+            for (DynamicObject dynamicObject : arrayModel) {
+                arrList.add(dynamicObject.get());
+            }
+            return arrList;
+        } else {
+            throw new JsonInitializeException(
+                    "Failed to initialize array " + arrayClass.getName());
+        }
+    }
+
     /**
-     * Gets the {@code @AutoInit} annotation associated with the field, and returns the
-     * fieldName it was set with. When set to the default (null or empty string), the field's
-     * name is returned instead. When the annotation does not exist, null is returned.
+     * Gets the {@code @AutoInit} annotation associated with the field, and returns
+     * the
+     * fieldName it was set with. When set to the default (null or empty string),
+     * the field's
+     * name is returned instead. When the annotation does not exist, null is
+     * returned.
      * 
      * @param field
-     * @return the String field name to use to init this field per the annotation, or null when 
-     * there is no annotation.
+     * @return the String field name to use to init this field per the annotation,
+     *         or null when
+     *         there is no annotation.
      */
     private String getInitAnnotationFieldName(Field field) {
         Annotation[] annotations = field.getAnnotations();
-        Annotation annotation = ArrayUtils.find(annotations, 
-            ele -> ele.annotationType().isAssignableFrom(AutoInit.class));
+        Annotation annotation = ArrayUtils.find(annotations,
+                ele -> ele.annotationType().isAssignableFrom(AutoInit.class));
         if (null == annotation) {
             return null;
         }
@@ -188,9 +215,9 @@ public class JsonParser {
         }
         return key;
     }
-     
-    private void setPrimitive(Field field, Object object, Object wrappedPrimitive) 
-        throws IllegalArgumentException, IllegalAccessException {
+
+    private void setPrimitive(Field field, Object object, Object wrappedPrimitive)
+            throws IllegalArgumentException, IllegalAccessException {
         if (field.getType() == int.class) {
             field.setInt(object, (Integer) wrappedPrimitive);
         } else if (field.getType() == short.class) {
@@ -210,24 +237,102 @@ public class JsonParser {
         }
     }
 
-    private void setPrimitiveArray(Field field, Object object, int index, Object wrappedPrimitive) {
-        if (field.getType() == int.class) {
-            Array.setInt(object, index, (Integer) wrappedPrimitive);
-        } else if (field.getType() == short.class) {
-            Array.setShort(object, index, (Short) wrappedPrimitive);
-        } else if (field.getType() == long.class) {
-            Array.setLong(object, index, (Long) wrappedPrimitive);
-        } else if (field.getType() == float.class) {
-            Array.setFloat(object, index, (Float) wrappedPrimitive);
-        } else if (field.getType() == double.class) {
-            Array.setDouble(object, index, (Double) wrappedPrimitive);
-        } else if (field.getType() == boolean.class) {
-            Array.setBoolean(object, index, (Boolean) wrappedPrimitive);
-        } else if (field.getType() == byte.class) {
-            Array.setByte(object, index, (Byte) wrappedPrimitive);
-        } else if (field.getType() == char.class) {
-            Array.setChar(object, index, (Character) wrappedPrimitive);
+    private void setPrimitiveArray(Class<?> componentType, Object object, int index, Object wrappedPrimitive) {
+        if (componentType.isAssignableFrom(int.class)) {
+            Array.setInt(object, index, toWrapperType(Integer.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(short.class)) {
+            Array.setShort(object, index, toWrapperType(Short.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(long.class)) {
+            Array.setLong(object, index, toWrapperType(Long.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(float.class)) {
+            Array.setFloat(object, index, toWrapperType(Float.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(double.class)) {
+            Array.setDouble(object, index, toWrapperType(Double.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(boolean.class)) {
+            Array.setBoolean(object, index, toWrapperType(Boolean.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(byte.class)) {
+            Array.setByte(object, index, toWrapperType(Byte.class, wrappedPrimitive));
+        } else if (componentType.isAssignableFrom(char.class)) {
+            Array.setChar(object, index, toWrapperType(Character.class, wrappedPrimitive));
+        } else {
+            throw new RuntimeException("Component type '" + componentType.getName() + "' was not a primitive");
         }
+    }
+
+    private <T> T toWrapperType(Class<T> targetType, Object wrappedPrimitive) {
+        if (targetType.isAssignableFrom(Integer.class)) {
+            int toSet = 0;
+            if (wrappedPrimitive instanceof Long) {
+                Long longPrimitive = (Long) wrappedPrimitive;
+                if (longPrimitive > Integer.MAX_VALUE || longPrimitive < Integer.MIN_VALUE) {
+                    throw new IllegalArgumentException("Long value '" + longPrimitive + " is out of Integer range");
+                }
+                toSet = longPrimitive.intValue();
+            } else if (wrappedPrimitive instanceof Short) {
+                Short shortPrimitive = (Short) wrappedPrimitive;
+                toSet = shortPrimitive.intValue();
+            } else {
+                toSet = (Integer) wrappedPrimitive;
+            }
+            return targetType.cast(toSet);
+        } else if (targetType.isAssignableFrom(Short.class)) {
+            short toSet = 0;
+            if (wrappedPrimitive instanceof Long) {
+                Long longPrimitive = (Long) wrappedPrimitive;
+                if (longPrimitive > Short.MAX_VALUE || longPrimitive < Short.MIN_VALUE) {
+                    throw new IllegalArgumentException("Long value '" + longPrimitive + " is out of Short range");
+                }
+                toSet = longPrimitive.shortValue();
+            } else if (wrappedPrimitive instanceof Integer) {
+                Integer intPrimitive = (Integer) wrappedPrimitive;
+                if (intPrimitive > Short.MAX_VALUE || intPrimitive < Short.MIN_VALUE) {
+                    throw new IllegalArgumentException("Integer value '" + intPrimitive + " is out of Short range");
+                }
+                toSet = intPrimitive.shortValue();
+            } else {
+                toSet = (Short) wrappedPrimitive;
+            }
+            return targetType.cast(toSet);
+        } else if (targetType.isAssignableFrom(Long.class)) {
+            long toSet = 0;
+            if (wrappedPrimitive instanceof Short) {
+                Short shortPrimitive = (Short) wrappedPrimitive;
+                toSet = shortPrimitive.longValue();
+            } else if (wrappedPrimitive instanceof Integer) {
+                Integer intPrimitive = (Integer) wrappedPrimitive;
+                toSet = intPrimitive.longValue();
+            } else {
+                toSet = (Long) wrappedPrimitive;
+            }
+            return targetType.cast(toSet);
+        } else if (targetType.isAssignableFrom(Float.class)) {
+            float toSet = 0.0f;
+            if (wrappedPrimitive instanceof Double) {
+                Double doublePrimitive = (Double) wrappedPrimitive;
+                if (doublePrimitive < Float.MIN_VALUE || doublePrimitive > Float.MAX_VALUE) {
+                    throw new IllegalArgumentException("Double value '" + doublePrimitive + " is out of Float range");
+                }
+                toSet = doublePrimitive.floatValue();
+            } else {
+                toSet = (Float) wrappedPrimitive;
+            }
+            return targetType.cast(toSet);
+        } else if (targetType.isAssignableFrom(Double.class)) {
+            double toSet = 0.0;
+            if (wrappedPrimitive instanceof Float) {
+                Float floatPrimitive = (Float) wrappedPrimitive;
+                toSet = floatPrimitive.doubleValue();
+            } else {
+                toSet = (Double) wrappedPrimitive;
+            }
+            return targetType.cast(toSet);
+        } else if (targetType.isAssignableFrom(Boolean.class)
+                || targetType.isAssignableFrom(Byte.class)
+                || targetType.isAssignableFrom(Character.class)) {
+            return targetType.cast(wrappedPrimitive);
+        }
+
+        throw new RuntimeException("Component type '" + targetType.getName() + "' was not a primitive");
     }
 
     public DynamicObject parse(InputStream inputStream) {

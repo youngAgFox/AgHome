@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.ag.DynamicObject;
-import com.ag.Server;
+import com.ag.Network.Server;
 import com.ag.json.JsonConfig;
 
 public class FlatFileStorerFactory {
